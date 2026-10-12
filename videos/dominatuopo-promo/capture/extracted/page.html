@@ -1,0 +1,1530 @@
+<!doctype html>
+<html lang="es" style="--age-cookie-banner-height: 0px;">
+<head>
+<style>
+    /* CSS crítico: solo lo necesario para pintar la cabecera (hero) sin
+       esperar a la descarga de theme.css completo (50KB), que se carga
+       después de forma no bloqueante. Copiado literal de theme.css --
+       cuando ese archivo termine de cargar, sus reglas (idénticas)
+       sustituyen a estas sin ningún cambio visual. */
+    :root {
+      --age-primary: #ffa633;
+      --age-primary-dark: #e8860f;
+      --age-primary-light: #ffc266;
+      --age-primary-soft: #fff1de;
+      --age-navy: #1b1f2e;
+      --age-navy-soft: #262c40;
+      --age-navy-ink: #aab0c6;
+      --age-ink: #16181d;
+      --age-ink-soft: #6b7280;
+      --age-ink-faint: #6b6b6b;
+      --age-bg: #f6f7f9;
+      --age-card: #ffffff;
+      --age-border: #e6e8ec;
+      --age-success: #1e9e63;
+      --age-success-bg: #e7f7ee;
+      --age-warning: #9c6608;
+      --age-warning-bg: #fff3d6;
+      --age-danger: #e0473f;
+      --age-danger-bg: #fdeceb;
+      --age-info: #1e56b0;
+      --age-info-bg: #e7f0ff;
+      --age-neutral-bg: #eef0f3;
+      --age-fuego: #ff5722;
+      --age-pill-ink: #545b68;
+      --age-pill-primary-ink: #a35c0d;
+      --age-pill-success-ink: #147a4d;
+      --age-radius-lg: 20px;
+      --age-radius-md: 14px;
+      --age-radius-sm: 10px;
+      --age-radius-pill: 999px;
+      --age-shadow: 0 6px 20px rgba(20, 24, 34, 0.06);
+      --age-shadow-hover: 0 16px 36px rgba(20, 24, 34, 0.12);
+      --age-shadow-nav: 0 2px 16px rgba(20, 24, 34, 0.08);
+      --age-font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Inter, Roboto, Helvetica, Arial, sans-serif;
+      --age-ease: cubic-bezier(0.4, 0, 0.2, 1);
+      --age-nav-height: 64px;
+      --age-container: 1160px;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --age-primary: #ffa633;
+      --age-primary-dark: #ffbb5c;
+      --age-primary-light: #ffc266;
+      --age-primary-soft: rgba(255, 166, 51, 0.16);
+      --age-navy: #12151f;
+      --age-navy-soft: #1c2032;
+      --age-navy-ink: #aab0c6;
+      --age-ink: #e8eaf0;
+      --age-ink-soft: #a7acba;
+      --age-ink-faint: #838a9e;
+      --age-bg: #0f1117;
+      --age-card: #1a1d29;
+      --age-border: #2a2e3d;
+      --age-success: #3ecf8e;
+      --age-success-bg: rgba(62, 207, 142, 0.14);
+      --age-warning: #f0b93d;
+      --age-warning-bg: rgba(240, 185, 61, 0.16);
+      --age-danger: #f0655f;
+      --age-danger-bg: rgba(240, 101, 95, 0.14);
+      --age-info: #7aa7ff;
+      --age-info-bg: rgba(122, 167, 255, 0.16);
+      --age-neutral-bg: #232734;
+      --age-fuego: #ff7a50;
+      --age-pill-ink: #a7acba;
+      --age-pill-primary-ink: #ffbb5c;
+      --age-pill-success-ink: #3ecf8e;
+      --age-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      --age-shadow-hover: 0 16px 36px rgba(0, 0, 0, 0.45);
+      --age-shadow-nav: 0 2px 16px rgba(0, 0, 0, 0.4);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--age-font) !important;
+      background: var(--age-bg);
+      color: var(--age-ink);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .age-nav {
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 500;
+      height: var(--age-nav-height);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 20px;
+      background: var(--age-navy);
+      box-shadow: var(--age-shadow-nav);
+      font-family: var(--age-font);
+    }
+    .age-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 24px;
+      border-radius: var(--age-radius-sm);
+      font-family: var(--age-font);
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease),
+        transform 0.15s var(--age-ease), box-shadow 0.2s var(--age-ease);
+      white-space: nowrap;
+    }
+    .age-btn:active { transform: translateY(1px); }
+    .age-btn-primary { background: var(--age-primary); color: #1b1f2e; }
+    .age-btn-primary:hover {
+      background: var(--age-primary-dark);
+      box-shadow: 0 8px 20px rgba(255, 166, 51, 0.35);
+    }
+    .age-btn-outline {
+      background: transparent;
+      color: var(--age-ink);
+      border: 1.5px solid var(--age-border);
+    }
+    .age-btn-outline:hover {
+      border-color: var(--age-ink);
+      background: var(--age-bg);
+    }
+    .age-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: var(--age-radius-pill);
+      font-size: 12.5px;
+      font-weight: 700;
+      background: var(--age-neutral-bg);
+      color: var(--age-pill-ink);
+    }
+    .age-pill-primary { background: var(--age-primary-soft); color: var(--age-pill-primary-ink); }
+  </style>
+<style>
+    .home-hero {
+      background: var(--age-navy);
+      color: #fff;
+      padding: 76px 20px 88px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .home-hero-inner {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* ---------- Escena animada del hero (ver home-hero-anim.js) ----------
+       Reemplaza la ilustración estática anterior por un pequeño montaje:
+       3 "hojas" sueltas (el temario disperso) que se recomponen en una
+       pregunta de test resuelta -- dramatiza el propio H1 en vez de decorar
+       la carga. Reutiliza las clases del mock de la sección "showcase"
+       (.showcase-mock, .mock-linea, .mock-opcion, .letra, más abajo en este
+       mismo fichero) para que la tarjeta final sea idéntica a las que ya
+       usa el resto de la página. */
+    .hero-escena {
+      position: relative;
+      display: block;
+      width: 250px;
+      height: 300px;
+      margin: 20px auto 0;
+    }
+
+    .hero-hoja {
+      position: absolute;
+      inset: 10% 14%;
+      background: var(--age-card);
+      border-radius: var(--age-radius-md);
+      box-shadow: var(--age-shadow-hover);
+      padding: 16px 18px;
+    }
+    .hero-hoja-1 { transform: rotate(-9deg) translate(-14px, 8px); }
+    .hero-hoja-2 { transform: rotate(7deg) translate(12px, -6px); z-index: 1; }
+    .hero-hoja-3 { transform: rotate(-3deg) translate(2px, 12px); z-index: 2; }
+
+    .hero-hoja-linea {
+      display: block;
+      height: 8px;
+      border-radius: 5px;
+      background: var(--age-border);
+      margin-bottom: 9px;
+    }
+    .hero-hoja-linea.corta { width: 60%; margin-bottom: 0; }
+
+    .hero-pregunta {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: none;
+      width: 100%;
+    }
+
+    /* Mismo peso visual que .mock-flashcard .pregunta (el otro mock de
+       pregunta real que ya usa la página, en el showcase de tarjetas). */
+    .hero-enunciado {
+      font-weight: 700;
+      color: var(--age-ink);
+      font-size: 0.92rem;
+      line-height: 1.4;
+      margin: 0 0 14px;
+    }
+
+    .hero-check {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    /* Quien prefiere menos movimiento llega igual al desenlace (la opción
+       correcta ya marcada), solo que sin la coreografía -- home-hero-anim.js
+       hace lo mismo por JS (salto directo, sin timeline) para cuando el
+       script sí llega a cargar. */
+    @media (prefers-reduced-motion: reduce) {
+      .hero-hoja { display: none; }
+      .hero-pregunta { opacity: 1; }
+    }
+
+    @media (min-width: 960px) {
+      .home-hero-inner {
+        max-width: 1120px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 40px;
+        text-align: left;
+      }
+
+      .home-hero-texto {
+        flex: 1 1 520px;
+        max-width: 560px;
+      }
+
+      .home-hero-ctas {
+        justify-content: flex-start;
+      }
+
+      .home-hero-demo-link {
+        text-align: left;
+      }
+
+      .hero-escena {
+        flex: 0 0 380px;
+        width: 380px;
+        height: 400px;
+        margin: 0;
+      }
+    }
+
+    .home-hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 18px 0 14px;
+      line-height: 1.1;
+    }
+
+    .home-hero p {
+      font-size: 1.1rem;
+      color: var(--age-navy-ink);
+      line-height: 1.55;
+      margin-bottom: 24px;
+    }
+
+    .home-hero-demo-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 10px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 999px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .home-hero-demo-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+
+    .home-hero-ctas {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 26px;
+    }
+
+    /* ---------- Banner de prueba gratuita ----------
+       Antes era una franja naranja sólida a toda anchura justo debajo del
+       hero navy -- demasiado potente al lado del resto de la página, que
+       usa color con moderación (acentos, no fondos enteros). Ahora es una
+       tarjeta contenida con un tinte suave, coherente con el resto de
+       tarjetas del sitio (.highlight-card, .home-prueba-social-item): el
+       color fuerte se reserva para el botón, que es lo que de verdad tiene
+       que llamar la atención. */
+    .home-prueba-banner {
+      background: var(--age-bg);
+      padding: 40px 20px 8px;
+    }
+
+    .home-prueba-banner-inner {
+      max-width: var(--age-container);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      flex-wrap: wrap;
+      text-align: center;
+      background: var(--age-primary-soft);
+      border: 1px solid rgba(255, 166, 51, 0.35);
+      border-radius: var(--age-radius-lg);
+      padding: 26px 32px;
+    }
+
+    .home-prueba-banner-emoji {
+      flex-shrink: 0;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--age-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      box-shadow: var(--age-shadow);
+    }
+
+    .home-prueba-banner-texto {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .home-prueba-banner-texto strong {
+      color: var(--age-ink);
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .home-prueba-banner-texto span {
+      /* --age-ink-soft da un contraste de 4.35:1 sobre este fondo naranja
+         suave, por debajo del 4.5:1 mínimo (AA) -- se usa --age-ink. */
+      color: var(--age-ink);
+      font-size: 0.92rem;
+    }
+
+    .home-prueba-banner .age-btn-primary {
+      white-space: nowrap;
+    }
+
+    @media (max-width: 640px) {
+      .home-prueba-banner-inner {
+        flex-direction: column;
+        text-align: center;
+        padding: 28px 22px;
+      }
+      .home-prueba-banner-texto {
+        text-align: center;
+      }
+    }
+
+    .home-section {
+      max-width: var(--age-container);
+      margin: 0 auto;
+      padding: 64px 20px 20px;
+    }
+
+    .home-prueba-social {
+      display: grid;
+      max-width: var(--age-container);
+      margin: 0 auto;
+      padding: 36px 20px 0;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      justify-items: center;
+    }
+
+    .home-prueba-social-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-lg);
+      box-shadow: var(--age-shadow);
+      padding: 28px 32px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+    }
+
+    .home-prueba-social-item strong {
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      /* var(--age-primary-dark) solo da 2.67:1 en claro sobre --age-card
+         (por debajo incluso del 3:1 de texto grande) -- mismo color ya
+         vetado más abajo para .eq-h3 (6.22:1 en claro, ver esa nota). */
+      color: #8f5209;
+    }
+    :root[data-theme="dark"] .home-prueba-social-item strong {
+      color: var(--age-primary-dark);
+    }
+
+    .home-prueba-social-item span {
+      font-size: 0.95rem;
+      color: var(--age-ink-soft);
+    }
+
+    .home-section-titulo {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .home-section-sub {
+      text-align: center;
+      color: var(--age-ink-soft);
+      margin-bottom: 34px;
+      max-width: 620px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.5;
+    }
+
+    .home-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 18px;
+    }
+
+    /* ---------- Highlights (4 tarjetas) ---------- */
+    .highlight-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 20px;
+    }
+
+    .highlight-card {
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-lg);
+      padding: 28px 24px;
+      box-shadow: var(--age-shadow);
+      transition: transform 0.2s var(--age-ease), box-shadow 0.2s var(--age-ease);
+    }
+
+    .highlight-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--age-shadow-hover);
+    }
+
+    .highlight-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--age-radius-md);
+      background: var(--age-primary-soft);
+      color: var(--age-primary-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
+    /* Las 4 tarjetas ya dicen algo distinto cada una -- que el icono
+       también varíe de color evita la fila de "tiles" idénticos típica de
+       una landing genérica (20/08/2026, auditoría UX). */
+    .highlight-card:nth-child(2) .highlight-icon { background: var(--age-success-bg); color: var(--age-success); }
+    .highlight-card:nth-child(3) .highlight-icon { background: var(--age-info-bg); color: var(--age-info); }
+    .highlight-card:nth-child(4) .highlight-icon { background: var(--age-warning-bg); color: var(--age-warning); }
+
+    .highlight-card h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin: 0 0 8px;
+      color: var(--age-ink);
+    }
+
+    .highlight-card p {
+      color: var(--age-ink-soft);
+      font-size: 0.94rem;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    /* ---------- Cómo funciona ---------- */
+    .pasos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      counter-reset: paso;
+    }
+
+    .paso-card {
+      position: relative;
+      padding: 8px 4px;
+    }
+
+    .paso-num {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--age-navy);
+      color: var(--age-primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.05rem;
+      margin-bottom: 14px;
+    }
+
+    .paso-card h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin: 0 0 6px;
+      color: var(--age-ink);
+    }
+
+    .paso-card p {
+      color: var(--age-ink-soft);
+      font-size: 0.92rem;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* ---------- Feature showcase (filas alternas con panel ilustrado) ---------- */
+    .showcase-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 44px;
+      align-items: center;
+      padding: 46px 0;
+      border-bottom: 1px solid var(--age-border);
+    }
+
+    .showcase-row:last-child {
+      border-bottom: none;
+    }
+
+    .showcase-row.reverse .showcase-text {
+      order: 2;
+    }
+
+    .showcase-row.reverse .showcase-visual {
+      order: 1;
+    }
+
+    .showcase-text h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: clamp(1.3rem, 2.4vw, 1.7rem);
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin: 0 0 14px;
+      color: var(--age-ink);
+    }
+
+    .showcase-text p {
+      color: var(--age-ink-soft);
+      font-size: 1rem;
+      line-height: 1.65;
+      margin: 0 0 20px;
+    }
+
+    .showcase-text strong {
+      color: var(--age-ink);
+    }
+
+    .showcase-visual {
+      border-radius: var(--age-radius-lg);
+      padding: 34px;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .showcase-mock {
+      background: var(--age-card);
+      border-radius: var(--age-radius-md);
+      box-shadow: var(--age-shadow-hover);
+      padding: 18px 20px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    /* mock: pregunta de test */
+    .mock-linea {
+      height: 10px;
+      border-radius: 6px;
+      background: var(--age-neutral-bg);
+      margin-bottom: 8px;
+    }
+    .mock-linea.corta { width: 55%; }
+    .mock-opcion {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1.5px solid var(--age-border);
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: var(--age-ink-soft);
+      /* Sin efecto en el mock estático del showcase (nace ya con/sin
+         .correcta, no hay "de" que animar) -- solo se nota en el hero,
+         donde home-hero-anim.js añade la clase a mitad de la coreografía. */
+      transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+    }
+    .mock-opcion.correcta {
+      border-color: var(--age-success);
+      background: var(--age-success-bg);
+      /* var(--age-success) da 3.09:1 sobre --age-success-bg en modo claro
+         (insuficiente); en oscuro sí cumple, así que solo se fija el claro. */
+      color: #136640;
+      font-weight: 700;
+    }
+    :root[data-theme="dark"] .mock-opcion.correcta {
+      color: var(--age-success);
+    }
+    .mock-opcion .letra {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid currentColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+
+    /* mock: flashcard */
+    .mock-flashcard {
+      background: var(--age-card);
+      border-radius: var(--age-radius-md);
+      box-shadow: var(--age-shadow-hover);
+      padding: 26px 22px;
+      width: 100%;
+      max-width: 300px;
+      text-align: center;
+      border: 2px solid var(--age-primary);
+    }
+    .mock-flashcard .pregunta {
+      font-weight: 700;
+      color: var(--age-ink);
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+    }
+    .mock-flashcard .progreso {
+      height: 6px;
+      border-radius: 999px;
+      background: var(--age-neutral-bg);
+      overflow: hidden;
+    }
+    .mock-flashcard .progreso-fill {
+      height: 100%;
+      width: 62%;
+      background: var(--age-primary);
+      border-radius: 999px;
+    }
+
+    /* mock: esquema (recreación en miniatura de un esquema real: "La
+       Constitución Española" a modo de ejemplo, con el mismo lenguaje
+       visual que genera la herramienta -- insignia circular con número
+       romano para cada bloque y numeración I.1/I.2 para sus sub-apartados). */
+    .mock-esquema-real { width: 100%; text-align: left; }
+    .eq-titulo {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--age-ink-soft);
+      /* Sin mayúsculas: "Ejemplo: La Constitución Española" en versalitas
+         de CSS es un texto demasiado largo para leerse cómodo en
+         mayúsculas (20/08/2026, auditoría UX) -- el tamaño, peso y borde
+         ya bastan para que se lea como etiqueta. */
+      letter-spacing: 0.02em;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--age-border);
+    }
+    .eq-h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--age-ink);
+      background: var(--age-primary-soft);
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin: 10px 0 6px;
+    }
+    .eq-h2:first-of-type { margin-top: 0; }
+    .eq-badge {
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--age-primary);
+      color: #fff;
+      font-size: 0.66rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .eq-h3 {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 0.78rem;
+      /* El fondo fijo (#eef1fb) del div exterior .showcase-visual NO es
+         el que de verdad queda detrás de este texto: .showcase-mock, un
+         contenedor anidado dentro, pinta encima su propio fondo con
+         var(--age-card) -- ese SÍ cambia con el tema (blanco en claro,
+         azul marino oscuro en oscuro), así que el color no puede ser
+         fijo tampoco (var(--age-primary-dark) solo daba 2.37:1 en claro;
+         este color fijo daba 6.22:1 en claro pero solo 2.70:1 en oscuro
+         sobre --age-card oscuro -- ver auditoría UX). */
+      color: #8f5209;
+      font-weight: 700;
+      margin: 6px 0 6px 14px;
+      padding-left: 10px;
+      border-left: 2px solid var(--age-primary);
+    }
+    :root[data-theme="dark"] .eq-h3 {
+      color: var(--age-primary-dark);
+    }
+    .eq-num {
+      color: var(--age-ink-soft);
+      font-weight: 800;
+      font-size: 0.66rem;
+    }
+
+    /* mock: estadísticas (recreación en miniatura: tiempo total, reparto
+       de aciertos/fallos/blancos y cobertura de temas estudiados, igual
+       que en la página real de Estadísticas). */
+    .mock-stats-real { width: 100%; text-align: left; }
+    .st-tiempo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--age-ink);
+      margin-bottom: 12px;
+    }
+    .st-tiempo [data-icon] { color: var(--age-primary-dark); display: inline-flex; }
+    .st-barra {
+      display: flex;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--age-neutral-bg);
+      margin-bottom: 8px;
+    }
+    .st-barra-acierto { background: var(--age-success); }
+    .st-barra-fallo { background: var(--age-danger); }
+    .st-barra-blanco { background: var(--age-border); }
+    .st-leyenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.68rem;
+      color: var(--age-ink-soft);
+      margin-bottom: 16px;
+    }
+    .st-leyenda .dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .st-leyenda .dot.acierto { background: var(--age-success); }
+    .st-leyenda .dot.fallo { background: var(--age-danger); }
+    .st-leyenda .dot.blanco { background: var(--age-border); }
+    .st-temas {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--age-ink-soft);
+      margin-bottom: 6px;
+    }
+    .st-temas strong { color: var(--age-ink); font-weight: 700; }
+    .st-cobertura {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--age-neutral-bg);
+      overflow: hidden;
+    }
+    .st-cobertura-fill {
+      height: 100%;
+      background: var(--age-primary);
+      border-radius: 999px;
+    }
+
+    /* mock: chat */
+    .mock-chat .bubble {
+      max-width: 82%;
+      padding: 9px 13px;
+      border-radius: 14px;
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .mock-chat .bubble.bot {
+      background: var(--age-neutral-bg);
+      color: var(--age-ink);
+      border-bottom-left-radius: 4px;
+    }
+    .mock-chat .bubble.user {
+      background: var(--age-primary-soft);
+      color: var(--age-ink);
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+      font-weight: 500;
+    }
+
+    @media (max-width: 820px) {
+      .showcase-row,
+      .showcase-row.reverse .showcase-text,
+      .showcase-row.reverse .showcase-visual {
+        order: initial;
+        grid-template-columns: 1fr;
+      }
+      .showcase-row {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding: 34px 0;
+      }
+    }
+
+    /* ---------- Pricing teaser ---------- */
+    .pricing-teaser-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .pricing-teaser-card {
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-lg);
+      padding: 26px 22px;
+      text-align: center;
+    }
+
+    .pricing-teaser-card.destacado {
+      border: 2px solid var(--age-primary);
+      box-shadow: var(--age-shadow-hover);
+      position: relative;
+    }
+
+    .pricing-teaser-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--age-primary);
+      color: #1b1f2e;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 3px 12px;
+      border-radius: var(--age-radius-pill);
+    }
+
+    .pricing-teaser-card h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin: 4px 0 6px;
+    }
+
+    .pricing-teaser-price {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: var(--age-ink);
+      margin-bottom: 4px;
+    }
+
+    .pricing-teaser-price span {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--age-ink-soft);
+    }
+
+    .pricing-teaser-card p.desc {
+      color: var(--age-ink-soft);
+      font-size: 0.88rem;
+      margin-bottom: 16px;
+    }
+
+    .pricing-teaser-note {
+      text-align: center;
+      color: var(--age-ink-soft);
+      margin-top: 24px;
+      font-size: 0.92rem;
+    }
+
+    .home-section-link {
+      text-align: center;
+      margin-top: 24px;
+    }
+
+    /* ---------- FAQ ---------- */
+    .faq-list {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-md);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .faq-item summary {
+      cursor: pointer;
+      padding: 18px 22px;
+      font-weight: 700;
+      color: var(--age-ink);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .faq-item summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq-item summary::after {
+      content: "+";
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: var(--age-ink-soft);
+      flex-shrink: 0;
+      transition: transform 0.2s var(--age-ease);
+    }
+
+    .faq-item[open] summary::after {
+      transform: rotate(45deg);
+    }
+
+    .faq-item p {
+      padding: 0 22px 20px;
+      color: var(--age-ink-soft);
+      line-height: 1.6;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    /* ---------- CTA final ---------- */
+    .home-cta-final {
+      background: var(--age-navy);
+      color: #fff;
+      text-align: center;
+      padding: 64px 20px;
+      margin-top: 64px;
+    }
+
+    .home-cta-final h2 {
+      font-size: clamp(1.5rem, 3vw, 2.1rem);
+      font-weight: 800;
+      margin: 0 0 10px;
+    }
+
+    .home-cta-final p {
+      color: var(--age-navy-ink);
+      margin: 0 0 26px;
+    }
+
+    @media (max-width: 480px) {
+      .home-hero {
+        padding: 52px 18px 64px;
+      }
+      .home-section {
+        padding: 48px 16px 16px;
+      }
+    }
+  </style>
+<script>if(location.hostname==="oposicion-age-1.onrender.com"){location.replace("https://www.dominatuopo.com"+location.pathname+location.search+location.hash);}</script>
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Domina tu Opo",
+    "url": "https://www.dominatuopo.com/",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web",
+    "description": "Prepara las oposiciones a GACE, Administrativo del Estado (AGE) y Auxiliar Administrativo con tests ilimitados sobre el temario oficial, herramientas con IA para tus propios apuntes y estadísticas de progreso.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR"
+    }
+  }
+  </script>
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Domina tu Opo",
+    "url": "https://www.dominatuopo.com/",
+    "logo": "https://www.dominatuopo.com/assets/favicon-512.png",
+    "description": "Plataforma online para preparar oposiciones de la Administración Pública española (AGE, GACE, Auxiliar Administrativo) con tests sobre el temario oficial y herramientas de estudio con IA."
+  }
+  </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Cómo funciona la prueba gratuita de 7 días?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Al crear tu cuenta empiezas automáticamente con 7 días de acceso Premium completo, sin necesidad de tarjeta. Cuando termine, si no has contratado un plan de pago, tu cuenta queda bloqueada hasta que elijas Básico o Premium."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Para qué oposiciones sirve la web?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Preparamos oposiciones de la Administración Pública y vamos añadiendo más continuamente. Puedes estudiar varias a la vez: cada una tiene su propio temario, tests y estadísticas independientes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué tipo de archivos puedo subir a las herramientas de IA?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "De momento admitimos documentos en formato PDF de hasta 10 MB. Si tienes tus apuntes en Word, expórtalos a PDF antes de subirlos."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué pasa si mi PDF está escaneado como imagen?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nuestras herramientas leen el texto del documento, así que necesitan que el PDF tenga texto seleccionable (no solo una foto o escaneo sin OCR). Si tu PDF es un escaneo, prueba a pasarlo antes por un conversor de \"PDF escaneado a texto\"."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuántas preguntas puedo generar por test?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Puedes pedir entre 1 y 100 preguntas por test, tanto en los generadores desde el temario oficial como en los que parten de tu propio PDF."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Los planes de pago caducan o son una suscripción?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Son una suscripción mensual, no un pack de créditos que caduque: mientras tu plan esté activo tienes acceso ilimitado a todo lo que incluye. Puedes cancelarla cuando quieras desde \"Mi cuenta\" y seguirá activa hasta el final del periodo ya pagado."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Puedo repetir los tests que ya he generado?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sí, tantas veces como quieras. Puedes repetir tu último test completo desde \"Tests → Repetir último test\", o quedarte solo con las preguntas que fallaste desde \"Preguntas falladas\"."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Por qué mi test tiene a veces menos preguntas de las que pedí?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Puede pasar si el tema elegido tiene poco contenido disponible en el temario, o si alguna pregunta generada por la IA no supera nuestras validaciones de calidad. En esos casos seguimos intentándolo con más contenido del tema antes de darte el test, para acercarnos lo máximo posible al número que pediste."
+      }
+    }
+  ]
+}
+  </script>
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "Preparación de oposiciones con Domina tu Opo",
+    "description": "Prepara las oposiciones a GACE, Administrativo del Estado (AGE) y Auxiliar Administrativo con tests ilimitados sobre el temario oficial, herramientas con IA para tus propios apuntes y estadísticas de progreso.",
+    "provider": {
+      "@type": "Organization",
+      "name": "Domina tu Opo",
+      "sameAs": "https://www.dominatuopo.com/"
+    },
+    "hasCourseInstance": {
+      "@type": "CourseInstance",
+      "courseMode": "online"
+    }
+  }
+  </script>
+<script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+</head>
+<body>
+<a class="age-skip-link" href="#contenido-principal">Saltar al contenido principal</a>
+  <nav class="age-nav" data-built="1"><div class="age-nav-inner"><a class="age-nav-brand" href="/" aria-label="Domina tu Opo - Inicio"><img class="age-nav-brand-mark" src="http://localhost:8765/assets/favicon.svg" alt="" width="28" height="28"><span class="age-nav-brand-text">Domina tu Opo</span></a><div class="age-nav-links"><hr class="age-nav-links-separador"><div class="age-nav-links-items"><a href="/" class="age-nav-active">Inicio</a><a href="/oposiciones/">Oposiciones</a><a href="/blog/">Blog</a><a href="/como-funciona/">Cómo funciona</a><a href="/planes/">Planes</a></div><hr class="age-nav-links-separador"><button type="button" class="age-tema-movil age-tema-toggle" aria-label="Activar modo oscuro"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" /></svg><span>Modo oscuro</span></button></div><div class="age-nav-right" id="age-nav-right"><div class="age-nav-utilidades"></div><div class="age-account" data-uid=""><a class="age-btn age-btn-primary" style="padding:9px 18px;font-size:13.5px;" href="/login/?next=%2F">Iniciar sesión</a></div></div><button type="button" class="age-nav-burger" aria-label="Abrir menú" aria-expanded="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /></svg></button></div></nav>
+
+  <section class="home-hero" id="contenido-principal">
+    <div class="home-hero-inner">
+      <div class="home-hero-texto">
+        <h1>Prepara tu oposición sin perderte entre apuntes</h1>
+        <p>Tests ilimitados sobre el temario oficial de tu oposición, herramientas con inteligencia artificial avanzada para tus propios documentos, y estadísticas claras de tu progreso — todo en un solo sitio.</p>
+        <div class="home-hero-ctas">
+          <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Empezar mi prueba gratuita</a>
+          <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
+        </div>
+        <a href="/demo/" class="home-hero-demo-link"><span data-icon="rayo" data-icon-size="16"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" /></svg></span> Prueba 5 preguntas gratis, sin registrarte</a>
+      </div>
+      <!-- Momento de autor de la landing (ver home-hero-anim.js): de un
+           montón de apuntes sueltos a una pregunta de test resuelta --
+           dramatiza literalmente la promesa del H1 en vez de decorar la
+           carga con una animación genérica. Estado por defecto (sin JS):
+           las 3 "hojas" sueltas quedan visibles como ilustración estática
+           -- nunca queda contenido oculto si el script no llega a cargar. -->
+      <div class="hero-escena" aria-hidden="true">
+        <div class="hero-hoja hero-hoja-1" style="opacity: 0; transform: rotate(-5.9e-06deg) translateX(-9.2e-06px) translateY(5.3e-06px) scale(0.94);">
+          <span class="hero-hoja-linea"></span>
+          <span class="hero-hoja-linea corta"></span>
+          <span class="hero-hoja-linea"></span>
+        </div>
+        <div class="hero-hoja hero-hoja-2" style="opacity: 0; transform: rotate(0.0027764deg) translateX(0.0047595px) translateY(-0.0023797px) scale(0.94);">
+          <span class="hero-hoja-linea"></span>
+          <span class="hero-hoja-linea corta"></span>
+          <span class="hero-hoja-linea"></span>
+        </div>
+        <div class="hero-hoja hero-hoja-3" style="opacity: 0; transform: rotate(-0.0093519deg) translateX(0.0062346px) translateY(0.0374077px) scale(0.94);">
+          <span class="hero-hoja-linea"></span>
+          <span class="hero-hoja-linea corta"></span>
+          <span class="hero-hoja-linea"></span>
+        </div>
+        <div class="hero-pregunta showcase-mock" id="hero-pregunta" style="opacity: 1; transform: scale(1);">
+          <!-- Art. 1.3 CE: "La forma política del Estado español es la
+               Monarquía parlamentaria." Un enunciado real y corto en vez
+               de las barras grises genéricas -- sigue siendo decorativo
+               (aria-hidden en el contenedor), pero el dato es exacto. -->
+          <p class="hero-enunciado">¿Cuál es la forma política del Estado español?</p>
+          <div class="mock-opcion"><span class="letra">A</span> República</div>
+          <div class="mock-opcion" id="hero-opcion-correcta">
+            <span class="letra">B</span> Monarquía parlamentaria
+            <svg class="hero-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6" style="stroke-dasharray: 22.9849; stroke-dashoffset: 0px;" /></svg>
+          </div>
+          <div class="mock-opcion"><span class="letra">C</span> Estado federal</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-prueba-banner">
+    <div class="home-prueba-banner-inner">
+      <span class="home-prueba-banner-emoji" data-icon="regalo" data-icon-size="32"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="9" width="16" height="11" rx="1" /><line x1="4" y1="13" x2="20" y2="13" /><line x1="12" y1="9" x2="12" y2="20" /><path d="M12 9C10.5 5.5 6.5 5.5 6.5 8S9 9 12 9zM12 9c1.5-3.5 5.5-3.5 5.5-1S15 9 12 9z" /></svg></span>
+      <div class="home-prueba-banner-texto">
+        <strong>7 días de Premium gratis, sin tarjeta</strong>
+        <span>Accede a todas las herramientas desde el primer día. Después, tú decides si sigues.</span>
+      </div>
+      <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Crear cuenta gratis</a>
+    </div>
+  </section>
+
+  <div class="home-prueba-social" id="home-prueba-social">
+    <div class="home-prueba-social-item">
+      <strong class="home-prueba-social-num">+1.655</strong>
+      <span>preguntas oficiales disponibles</span>
+    </div>
+    <div class="home-prueba-social-item">
+      <strong class="home-prueba-social-num">+12.223</strong>
+      <span>preguntas generadas por opositores</span>
+    </div>
+  </div>
+
+  <section class="home-section">
+    <h2 class="home-section-titulo">Todo lo que necesitas para aprobar tu oposición</h2>
+    <p class="home-section-sub">Herramientas pensadas para opositores que quieren estudiar de forma inteligente, no solo memorizar.</p>
+    <div class="highlight-grid">
+      <div class="highlight-card">
+        <div class="highlight-icon" data-icon="lapiz" data-icon-size="30"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" /></svg></div>
+        <h3>Tests personalizados y oficiales</h3>
+        <p>Elige los temas que quieres practicar, simula exámenes con preguntas reales o deja que la IA adapte el nivel a cómo vas rindiendo.</p>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-icon" data-icon="repetir" data-icon-size="30"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3" /><polyline points="17 3 17 7 13 7" /><path d="M20 12a8 8 0 0 1-14 5.3" /><polyline points="7 21 7 17 11 17" /></svg></div>
+        <h3>Intentos ilimitados</h3>
+        <p>Repite el último test, repasa solo las preguntas que has fallado y vuelve sobre cualquier tema tantas veces como necesites.</p>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-icon" data-icon="robot" data-icon-size="30"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="11" rx="2" /><circle cx="9" cy="13.5" r="1.1" fill="currentColor" stroke="none" /><circle cx="15" cy="13.5" r="1.1" fill="currentColor" stroke="none" /><line x1="12" y1="8" x2="12" y2="4" /><circle cx="12" cy="3" r="1" /><line x1="2" y1="13" x2="2" y2="16" /><line x1="22" y1="13" x2="22" y2="16" /></svg></div>
+        <h3>IA avanzada</h3>
+        <p>Nuestro motor de IA analiza tus propios apuntes o el BOE y genera preguntas relevantes con explicaciones detalladas para cada respuesta.</p>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-icon" data-icon="rayo" data-icon-size="30"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" /></svg></div>
+        <h3>Resultados instantáneos</h3>
+        <p>Corrección automática, feedback inmediato y estadísticas por tema para saber exactamente dónde flojeas.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <h2 class="home-section-titulo">¿Cómo funciona?</h2>
+    <p class="home-section-sub">De cero a tu primer test en menos de un minuto.</p>
+    <div class="pasos-grid">
+      <div class="paso-card">
+        <div class="paso-num">1</div>
+        <h3>Elige tu oposición</h3>
+        <p>Selecciona la oposición que estás preparando entre las disponibles — cada vez añadimos más. Puedes estudiar varias a la vez y llevar el progreso de cada una por separado.</p>
+      </div>
+      <div class="paso-card">
+        <div class="paso-num">2</div>
+        <h3>Empieza tu prueba Premium gratis</h3>
+        <p>Crea tu cuenta y consigue 7 días de acceso Premium completo, sin tarjeta: tests oficiales, tus estadísticas y todas las herramientas de IA.</p>
+      </div>
+      <div class="paso-card">
+        <div class="paso-num">3</div>
+        <h3>Sube tus propios apuntes</h3>
+        <p>Un PDF de tus resúmenes, del BOE o de cualquier temario: la IA lo convierte en tests, tarjetas, esquemas o resúmenes.</p>
+      </div>
+      <div class="paso-card">
+        <div class="paso-num">4</div>
+        <h3>Estudia y repasa sin límite</h3>
+        <p>Chatea con Tu Tutor sobre cualquier duda del temario o del proceso selectivo y repite lo que necesites hasta dominarlo.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <h2 class="home-section-titulo">Todo lo que puedes hacer en Domina tu Opo</h2>
+    <p class="home-section-sub">Un vistazo a las herramientas que tienes disponibles, todas conectadas entre sí.</p>
+
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <h3><span data-icon="lapiz" data-icon-size="22"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" /></svg></span> Tests que se adaptan a ti</h3>
+        <p>Genera exámenes <strong>personalizados</strong> eligiendo los temas que quieres reforzar, ponte a prueba con <strong>preguntas oficiales</strong> reales de convocatorias anteriores, o repite un test centrándote solo en tus <strong>preguntas falladas</strong> o favoritas para reforzar justo lo que más se te resiste.</p>
+        <a href="/test-generator/" class="age-btn age-btn-outline">Generar un test</a>
+      </div>
+      <div class="showcase-visual" style="background: var(--age-primary-soft);">
+        <div class="showcase-mock">
+          <div class="mock-linea"></div>
+          <div class="mock-linea corta"></div>
+          <div class="mock-opcion"><span class="letra">A</span> Primera opción</div>
+          <div class="mock-opcion correcta"><span class="letra">B</span> Segunda opción <span data-icon="check" data-icon-size="14"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6" /></svg></span></div>
+          <div class="mock-opcion"><span class="letra">C</span> Tercera opción</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-row reverse">
+      <div class="showcase-text">
+        <h3><span data-icon="tarjeta" data-icon-size="22"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="6" y1="14.5" x2="10" y2="14.5" /></svg></span> Tarjetas de memoria</h3>
+        <p>Avanza más rápido con <strong>memorización activa</strong>. Convierte cualquier PDF en tarjetas de pregunta/respuesta, repásalas en modo estudio y trabaja la <strong>memoria a largo plazo</strong> en vez de releer lo mismo una y otra vez.</p>
+        <a href="/subida-pdf-tarjetas/" class="age-btn age-btn-outline">Crear tarjetas de memoria</a>
+      </div>
+      <div class="showcase-visual" style="background: #eafaf0;">
+        <div class="mock-flashcard">
+          <div class="pregunta">¿Qué son las Cortes Generales?</div>
+          <div class="progreso"><div class="progreso-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <h3><span data-icon="esquema" data-icon-size="22"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="5" x2="20" y2="5" /><line x1="7" y1="10.3" x2="20" y2="10.3" /><line x1="7" y1="15.7" x2="20" y2="15.7" /><line x1="4" y1="21" x2="20" y2="21" /></svg></span> Esquemas y resúmenes automáticos</h3>
+        <p>Sube un documento largo y consigue un <strong>esquema jerárquico</strong> listo para repasar de un vistazo, o un <strong>resumen</strong> con los puntos clave para sintetizar un tema entero en minutos.</p>
+        <a href="/subida-pdf-esquemas/" class="age-btn age-btn-outline">Generar un esquema</a>
+      </div>
+      <div class="showcase-visual" style="background: #eef1fb;">
+        <div class="showcase-mock mock-esquema-real">
+          <div class="eq-titulo">Ejemplo: La Constitución Española</div>
+          <div class="eq-h2"><span class="eq-badge">I</span> Título Preliminar</div>
+          <div class="eq-h3"><span class="eq-num">I.1</span> Fundamentos del Estado</div>
+          <div class="eq-h3"><span class="eq-num">I.2</span> La bandera y la capital</div>
+          <div class="eq-h2"><span class="eq-badge">II</span> Derechos y deberes fundamentales</div>
+          <div class="eq-h3"><span class="eq-num">II.1</span> Derechos fundamentales y libertades</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-row reverse">
+      <div class="showcase-text">
+        <h3><span data-icon="chat" data-icon-size="22"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg></span> Tu Tutor</h3>
+        <p>Resuelve cualquier duda del temario charlando con la IA como lo harías con un compañero de estudio, o pregúntale por la <strong>estructura del examen, plazos y consejos</strong> de cara a la prueba: Tu Tutor entiende qué necesitas y responde en consecuencia.</p>
+        <a href="/tu-tutor/" class="age-btn age-btn-outline">Abrir Tu Tutor</a>
+      </div>
+      <div class="showcase-visual" style="background: #fff4e8;">
+        <div class="showcase-mock mock-chat">
+          <div class="bubble bot">¿En qué puedo ayudarte hoy?</div>
+          <div class="bubble user">Explícame el Título Preliminar</div>
+          <div class="bubble bot">Claro, empieza estableciendo que...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <h3><span data-icon="grafico" data-icon-size="22"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="20" x2="20" y2="20" /><rect x="6" y="14" width="3" height="6" /><rect x="11" y="10" width="3" height="10" /><rect x="16" y="6" width="3" height="14" /></svg></span> Estadísticas de tu progreso</h3>
+        <p>Aciertos, fallos, nota media, temas más estudiados y temas pendientes — todo separado por oposición, para que sepas exactamente qué repasar antes del examen.</p>
+        <a href="/estadisticas/" class="age-btn age-btn-outline">Ver mis estadísticas</a>
+      </div>
+      <div class="showcase-visual" style="background: var(--age-primary-soft);">
+        <div class="showcase-mock mock-stats-real">
+          <div class="st-tiempo"><span data-icon="reloj" data-icon-size="14"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg></span> 14h 32m estudiadas</div>
+          <div class="st-barra">
+            <div class="st-barra-acierto" style="width:62%;"></div>
+            <div class="st-barra-fallo" style="width:28%;"></div>
+            <div class="st-barra-blanco" style="width:10%;"></div>
+          </div>
+          <div class="st-leyenda">
+            <span><i class="dot acierto"></i>Aciertos 62%</span>
+            <span><i class="dot fallo"></i>Fallos 28%</span>
+            <span><i class="dot blanco"></i>Blanco 10%</span>
+          </div>
+          <div class="st-temas"><span>Temas estudiados</span> <strong>32 de 45</strong></div>
+          <div class="st-cobertura"><div class="st-cobertura-fill" style="width:71%;"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <h2 class="home-section-titulo">¿Cómo se usa cada herramienta?</h2>
+    <p class="home-section-sub">Guías paso a paso con capturas de cada pantalla, para que sepas qué hace cada botón antes de entrar.</p>
+    <div class="home-grid">
+      <a class="age-option-card" href="/como-funciona/tu-tutor/">
+        <span class="age-option-icon" data-icon="robot" data-icon-size="28"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="11" rx="2" /><circle cx="9" cy="13.5" r="1.1" fill="currentColor" stroke="none" /><circle cx="15" cy="13.5" r="1.1" fill="currentColor" stroke="none" /><line x1="12" y1="8" x2="12" y2="4" /><circle cx="12" cy="3" r="1" /><line x1="2" y1="13" x2="2" y2="16" /><line x1="22" y1="13" x2="22" y2="16" /></svg></span>
+        <span class="age-option-title">Tu Tutor</span>
+        <span class="age-option-desc">Cómo preguntar dudas, el historial de conversaciones y la personalización del chat.</span>
+      </a>
+      <a class="age-option-card" href="/como-funciona/test-personalizado/">
+        <span class="age-option-icon" data-icon="lapiz" data-icon-size="28"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" /></svg></span>
+        <span class="age-option-title">Test Personalizado</span>
+        <span class="age-option-desc">Elegir temas, número de preguntas, reparto, favoritos y descarga en PDF.</span>
+      </a>
+      <a class="age-option-card" href="/como-funciona/test-oficial/">
+        <span class="age-option-icon" data-icon="matraz" data-icon-size="28"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6l-5.5 9a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3" /><path d="M7.5 15h9" /></svg></span>
+        <span class="age-option-title">Test Oficial</span>
+        <span class="age-option-desc">Simulacro de un clic o tu propio test con preguntas de exámenes reales.</span>
+      </a>
+      <a class="age-option-card" href="/como-funciona/herramientas-ia/">
+        <span class="age-option-icon" data-icon="subir" data-icon-size="28"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="6" /><polyline points="6 12 12 6 18 12" /></svg></span>
+        <span class="age-option-title">Herramientas IA (tus PDF)</span>
+        <span class="age-option-desc">Sube un PDF y sácale test, resumen, esquema, tarjetas o un chat sobre él.</span>
+      </a>
+    </div>
+    <p style="text-align:center; margin-top:18px;">
+      <a href="/como-funciona/" class="age-btn age-btn-outline">Ver toda la guía de uso</a>
+    </p>
+  </section>
+
+  <section class="home-section">
+    <h2 class="home-section-titulo">Elige tu plan</h2>
+    <p class="home-section-sub">Empieza con 7 días de Premium gratis, sin tarjeta. Sin permanencia: cancela cuando quieras desde "Mi cuenta".</p>
+    <div class="pricing-teaser-grid">
+      <div class="pricing-teaser-card">
+        <h3>Básico</h3>
+        <div class="pricing-teaser-price">4,99€<span>/mes</span></div>
+        <p class="desc">Test oficial y personalizado con IA (hasta 50 preguntas/día) y análisis de rendimiento (hasta 20 usos/mes).</p>
+      </div>
+      <div class="pricing-teaser-card destacado">
+        <div class="pricing-teaser-badge">Más completo</div>
+        <h3>Premium</h3>
+        <div class="pricing-teaser-price">9,99€<span>/mes</span></div>
+        <p class="desc">Todo ilimitado, además de las herramientas desde tus PDF y Tu Tutor, el chat premium de IA.</p>
+      </div>
+    </div>
+    <p class="pricing-teaser-note">
+      <a href="/planes/" class="age-btn age-btn-primary" style="margin-top:8px;">Ver todos los planes en detalle</a>
+    </p>
+  </section>
+
+  <section class="home-section">
+    <h2 class="home-section-titulo">Guías por oposición</h2>
+    <p class="home-section-sub">Temario, examen, plazas de la última convocatoria y sueldo, explicado para cada cuerpo.</p>
+    <div class="home-grid">
+      <a class="age-option-card" href="/oposicion-administrativo-estado-c1/">
+        <span class="age-option-icon" data-icon="documento" data-icon-size="28"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" /><path d="M15 2v5h5" /></svg></span>
+        <span class="age-option-title">Administrativo del Estado (C1)</span>
+        <span class="age-option-desc">Cuerpo General Administrativo: temario, examen y plazas de la última OEP.</span>
+      </a>
+      <a class="age-option-card" href="/oposicion-gace/">
+        <span class="age-option-icon" data-icon="edificio" data-icon-size="28"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21h16M5 21V10M9 21V10M12 21V10M15 21V10M19 21V10M3 10l9-6 9 6" /></svg></span>
+        <span class="age-option-title">GACE (A2)</span>
+        <span class="age-option-desc">Gestión de la Administración Civil del Estado: temario, examen y plazas.</span>
+      </a>
+      <a class="age-option-card" href="/oposicion-auxiliar-administrativo-estado/">
+        <span class="age-option-icon" data-icon="lapiz" data-icon-size="28"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" /></svg></span>
+        <span class="age-option-title">Auxiliar Administrativo (C2)</span>
+        <span class="age-option-desc">Cuerpo General Auxiliar: temario, examen y plazas de la última OEP.</span>
+      </a>
+    </div>
+    <p class="home-section-link">
+      <a href="/blog/" class="age-btn age-btn-outline">Ver todos los artículos del blog</a>
+    </p>
+  </section>
+
+  <section class="home-section">
+    <h2 class="home-section-titulo">Preguntas frecuentes</h2>
+    <p class="home-section-sub">Todo lo que necesitas saber sobre Domina tu Opo.</p>
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary>¿Cómo funciona la prueba gratuita de 7 días?</summary>
+        <p>Al crear tu cuenta empiezas automáticamente con 7 días de acceso Premium completo, sin necesidad de tarjeta. Cuando termine, si no has contratado un plan de pago, tu cuenta queda bloqueada (tus datos y tests ya hechos se conservan) hasta que elijas Básico o Premium.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Para qué oposiciones sirve la web?</summary>
+        <p>Preparamos oposiciones de la Administración Pública y vamos añadiendo más continuamente. Puedes estudiar varias a la vez: cada una tiene su propio temario, tests y estadísticas independientes.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Qué tipo de archivos puedo subir a las herramientas de IA?</summary>
+        <p>De momento admitimos documentos en formato PDF de hasta 10 MB. Si tienes tus apuntes en Word, expórtalos a PDF antes de subirlos.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Qué pasa si mi PDF está escaneado como imagen?</summary>
+        <p>Nuestras herramientas leen el texto del documento, así que necesitan que el PDF tenga texto seleccionable (no solo una foto o escaneo sin OCR). Si tu PDF es un escaneo, prueba a pasarlo antes por un conversor de "PDF escaneado a texto".</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cuántas preguntas puedo generar por test?</summary>
+        <p>Puedes pedir entre 1 y 100 preguntas por test, tanto en los generadores desde el temario oficial como en los que parten de tu propio PDF.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Los planes de pago caducan o son una suscripción?</summary>
+        <p>Son una suscripción mensual, no un pack de créditos que caduque: mientras tu plan esté activo tienes acceso ilimitado a todo lo que incluye. Puedes cancelarla cuando quieras desde "Mi cuenta" y seguirá activa hasta el final del periodo ya pagado.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Puedo repetir los tests que ya he generado?</summary>
+        <p>Sí, tantas veces como quieras. Puedes repetir tu último test completo desde "Tests → Repetir último test", o quedarte solo con las preguntas que fallaste desde "Preguntas falladas".</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Por qué mi test tiene a veces menos preguntas de las que pedí?</summary>
+        <p>Puede pasar si el tema elegido tiene poco contenido disponible en el temario, o si alguna pregunta generada por la IA no supera nuestras validaciones de calidad. En esos casos seguimos intentándolo con más contenido del tema antes de darte el test, para acercarnos lo máximo posible al número que pediste.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="home-cta-final">
+    <h2>¿Listo para empezar a practicar?</h2>
+    <p>7 días de Premium gratis, sin tarjeta. Después, tú decides si sigues.</p>
+    <div class="home-hero-ctas">
+      <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Empezar mi prueba gratuita</a>
+      <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
+    </div>
+  </section>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module" src="/assets/home-hero-anim.js"></script>
+  <script type="module">
+    import { icono } from "/assets/icons.js";
+    import { esperarUsuario } from "/assets/auth.js";
+    document.querySelectorAll("[data-icon]").forEach((el) => {
+      el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+    });
+
+    // La demo de 5 preguntas sin registrarse solo tiene sentido para quien
+    // todavía no tiene cuenta -- quien ya ha iniciado sesión tiene los 7
+    // días de prueba con Premium completo (todas las oposiciones incluidas),
+    // así que mostrarle también la demo anónima es ruido, no una alternativa.
+    // Empieza oculta en el HTML (display:none) para que a quien ya tiene
+    // sesión iniciada nunca le llegue a parpadear en pantalla mientras se
+    // resuelve la autenticación; solo se revela una vez confirmado que es
+    // una visita anónima.
+    esperarUsuario().then((usuario) => {
+      if (!usuario) {
+        const demo = document.querySelector(".home-hero-demo-link");
+        if (demo) demo.style.display = "";
+      }
+    });
+  </script>
+
+
+<footer class="age-footer">
+    <span>© 2026 Domina tu Opo</span>
+    <a href="/blog/">Blog</a>
+    <a href="/avisos-oficiales/">Avisos oficiales</a>
+    <a href="/aviso-legal/">Aviso legal</a>
+    <a href="/terminos/">Términos y condiciones</a>
+    <a href="/privacidad/">Privacidad</a>
+    <a href="/cookies/">Cookies</a>
+  </footer><div class="age-cookies-banner" style="display: none;">
+    <p>
+      Usamos almacenamiento técnico necesario para que puedas iniciar sesión y usar la web
+      (por ejemplo, para recordar tu sesión y la oposición que estás estudiando), y analítica
+      propia para entender el uso de la web y mejorarla. No usamos cookies de publicidad.
+      Más información en nuestra <a href="/cookies/">Política de Cookies</a>.
+    </p>
+    <button type="button" class="age-btn age-btn-primary" id="age-cookies-aceptar">Aceptar</button>
+  </div>
+</body>
+</html>
