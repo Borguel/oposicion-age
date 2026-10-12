@@ -56,6 +56,18 @@
      "llama" y no se confunda con un botón o acento normal de la web. */
   --age-fuego: #ff5722;
 
+  /* Paleta de color para carpetas de "Mis documentos" (11/10/2026): 3
+     colores nuevos que completan las 3 familias ya existentes (naranja =
+     --age-primary-dark, azul = --age-info, verde = --age-success) sin
+     reutilizar --age-danger (el rojo ya significa "borrar/peligro" en
+     toda la web). Mismo par acento+fondo suave que el resto del tema. */
+  --carpeta-morado: #7c5cbf;
+  --carpeta-morado-bg: #f1ecfb;
+  --carpeta-rosa: #d1498a;
+  --carpeta-rosa-bg: #fdeaf3;
+  --carpeta-turquesa: #15918a;
+  --carpeta-turquesa-bg: #e3f6f5;
+
   /* Texto sobre fondos "tintados" (pills/etiquetas: fondo pastel del mismo
      color de la familia -- neutro, ámbar, verde). Los tokens de color base
      (--age-ink-soft, --age-primary-dark, --age-success) no dan suficiente
@@ -131,6 +143,15 @@
   --age-info-bg: rgba(122, 167, 255, 0.16);
   --age-neutral-bg: #232734;
   --age-fuego: #ff7a50;
+
+  /* Mismo criterio que --age-danger/--age-info en oscuro: acento más
+     claro/saturado + fondo translúcido en vez de pastel plano. */
+  --carpeta-morado: #b08aed;
+  --carpeta-morado-bg: rgba(176, 138, 237, 0.16);
+  --carpeta-rosa: #f080b6;
+  --carpeta-rosa-bg: rgba(240, 128, 182, 0.16);
+  --carpeta-turquesa: #4cd6cc;
+  --carpeta-turquesa-bg: rgba(76, 214, 204, 0.16);
 
   /* Igual que en claro (--age-pill-ink etc.), pero aquí el contraste ya
      era correcto con los tokens base de siempre -- se repiten sus mismos

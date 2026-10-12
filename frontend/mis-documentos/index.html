@@ -71,7 +71,7 @@
     <!-- Nivel 2: dentro de una carpeta -->
     <div id="vista-carpeta-detalle" class="hidden">
       <button type="button" class="carpeta-detalle-volver" id="btn-volver-carpetas">← Volver a carpetas</button>
-      <div class="carpeta-detalle-cabecera">
+      <div class="carpeta-detalle-cabecera" id="carpeta-detalle-cabecera">
         <div class="carpeta-detalle-titulo-grupo">
           <span class="carpeta-detalle-icono" id="carpeta-detalle-icono"></span>
           <div class="carpeta-detalle-textos">
@@ -80,6 +80,7 @@
           </div>
         </div>
         <div class="carpeta-detalle-acciones">
+          <button type="button" class="carpeta-detalle-icon-btn" id="btn-editar-carpeta" aria-label="Editar carpeta" title="Editar carpeta"><span data-icon="lapiz" data-icon-size="18"></span></button>
           <button type="button" class="carpeta-detalle-icon-btn carpeta-detalle-icon-btn-peligro" id="btn-eliminar-carpeta" aria-label="Eliminar carpeta" title="Eliminar carpeta"><span data-icon="papelera" data-icon-size="18"></span></button>
           <button type="button" class="carpeta-detalle-icon-btn" id="btn-anadir-documentos" aria-label="Añadir documentos a esta carpeta" title="Añadir documentos"><span data-icon="mas" data-icon-size="18"></span></button>
           <button type="button" class="age-btn age-btn-primary" id="btn-subir-documento-carpeta"><span data-icon="subir" data-icon-size="16"></span> Subir documento</button>
@@ -172,6 +173,36 @@
       <div class="documentos-modal-acciones documentos-modal-acciones-doble">
         <button type="button" class="age-btn age-btn-outline" id="prompt-cancelar">Cancelar</button>
         <button type="submit" class="age-btn age-btn-primary" id="prompt-aceptar">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Editar carpeta: nombre + color, con el color aplicado a toda la
+     tarjeta/cabecera de la carpeta (11/10/2026, a petición del usuario).
+     Lista cerrada de 6 colores (no un selector libre) para que cada
+     opción tenga ya resuelto su propio par claro/oscuro en theme.css. -->
+<div class="documentos-modal-overlay hidden" id="modal-editar-carpeta">
+  <div class="age-card documentos-modal-card documentos-modal-card-pequena" tabindex="-1">
+    <div class="documentos-modal-cabecera">
+      <h3>Editar carpeta</h3>
+      <button type="button" class="documentos-modal-cerrar" id="editar-carpeta-cerrar" aria-label="Cerrar"><span data-icon="cruz" data-icon-size="16"></span></button>
+    </div>
+    <form id="editar-carpeta-formulario">
+      <label class="documentos-modal-prompt-label" for="editar-carpeta-input">Nombre</label>
+      <input type="text" id="editar-carpeta-input" class="documentos-modal-prompt-input" maxlength="60" />
+      <p class="documentos-modal-prompt-label">Color</p>
+      <div class="carpeta-color-swatches" id="editar-carpeta-swatches">
+        <button type="button" class="carpeta-color-swatch" data-color="naranja" aria-label="Naranja"></button>
+        <button type="button" class="carpeta-color-swatch" data-color="azul" aria-label="Azul"></button>
+        <button type="button" class="carpeta-color-swatch" data-color="verde" aria-label="Verde"></button>
+        <button type="button" class="carpeta-color-swatch" data-color="morado" aria-label="Morado"></button>
+        <button type="button" class="carpeta-color-swatch" data-color="rosa" aria-label="Rosa"></button>
+        <button type="button" class="carpeta-color-swatch" data-color="turquesa" aria-label="Turquesa"></button>
+      </div>
+      <div class="documentos-modal-acciones documentos-modal-acciones-doble">
+        <button type="button" class="age-btn age-btn-outline" id="editar-carpeta-cancelar">Cancelar</button>
+        <button type="submit" class="age-btn age-btn-primary" id="editar-carpeta-aceptar">Guardar</button>
       </div>
     </form>
   </div>

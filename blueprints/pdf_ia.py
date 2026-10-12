@@ -21,7 +21,7 @@ from limites_uso import max_paginas_para_plan, verificar_limite_uso, devolver_us
 from rate_limiter import limiter
 from documentos_pdf import (
     obtener_documento, listar_documentos, actualizar_carpeta,
-    listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas,
+    listar_carpetas, crear_carpeta, eliminar_carpeta, renombrar_carpeta, actualizar_titulo, obtener_preguntas_previas,
     obtener_tests_en_progreso_por_documento, eliminar_documento,
     iniciar_banco, anadir_al_banco, finalizar_banco, obtener_banco,
     resolver_tipo_contenido, actualizar_progreso_generacion, limpiar_progreso_generacion,
@@ -1841,6 +1841,23 @@ def eliminar_carpeta_documentos():
     datos = request.get_json(silent=True) or {}
     eliminar_carpeta(db, g.uid, datos.get("nombre") or "")
     return jsonify({"mensaje": "ok"})
+
+
+@bp.route('/carpetas-documentos', methods=['PATCH'])
+@requiere_plan(db, "premium", global_check=True)
+def editar_carpeta_documentos():
+    datos = request.get_json(silent=True) or {}
+    resultado = renombrar_carpeta(
+        db, g.uid,
+        datos.get("nombre_actual"), datos.get("nombre_nuevo"), datos.get("color"),
+    )
+    if resultado == "vacio":
+        return jsonify({"error": "El nombre de la carpeta no puede estar vacío."}), 400
+    if resultado == "color_invalido":
+        return jsonify({"error": "Color no válido."}), 400
+    if resultado == "duplicado":
+        return jsonify({"error": "Ya existe una carpeta con ese nombre."}), 409
+    return jsonify({"mensaje": "ok", "nombre": resultado, "color": datos.get("color")})
 
 
 @bp.route('/documento/<documento_id>/carpeta', methods=['POST'])

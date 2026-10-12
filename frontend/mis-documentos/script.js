@@ -167,6 +167,7 @@ function formatearFecha(iso) {
 // de nuevo) -- ver assets/modal-accesible.js.
 const a11yModalConfirmar = activarAccesibilidadModal(document.getElementById("modal-confirmar"), document.getElementById("confirmar-cerrar"));
 const a11yModalPrompt = activarAccesibilidadModal(document.getElementById("modal-prompt"), document.getElementById("prompt-cerrar"));
+const a11yModalEditarCarpeta = activarAccesibilidadModal(document.getElementById("modal-editar-carpeta"), document.getElementById("editar-carpeta-cerrar"));
 
 function mostrarConfirmacion({ titulo = "Confirmar", mensaje, textoAceptar = "Confirmar", peligro = false }) {
   return new Promise((resolve) => {
@@ -240,6 +241,56 @@ function mostrarPrompt({ titulo, label, valorInicial = "", placeholder = "", tex
     // justo después, sin renunciar al resto (atrapar Tab, restaurar el foco
     // al cerrar), que sigue haciendo falta.
     a11yModalPrompt.alAbrir();
+    input.focus();
+    input.select();
+  });
+}
+
+// Editar carpeta (nombre + color, 11/10/2026): mismo patrón Promise que
+// mostrarConfirmacion/mostrarPrompt, con una fila de círculos de color en
+// vez de un segundo campo de texto. Resuelve { nombre, color } o null si
+// se cancela.
+function mostrarEditarCarpeta({ nombreActual, colorActual = "azul" }) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("modal-editar-carpeta");
+    const formulario = document.getElementById("editar-carpeta-formulario");
+    const input = document.getElementById("editar-carpeta-input");
+    const swatches = Array.from(document.querySelectorAll("#editar-carpeta-swatches .carpeta-color-swatch"));
+    const btnCancelar = document.getElementById("editar-carpeta-cancelar");
+    const btnCerrar = document.getElementById("editar-carpeta-cerrar");
+
+    input.value = nombreActual;
+    let colorElegido = colorActual;
+    const pintarSeleccion = () => {
+      swatches.forEach((boton) => boton.classList.toggle("seleccionado", boton.dataset.color === colorElegido));
+    };
+    pintarSeleccion();
+    const onSwatchClick = (evento) => {
+      colorElegido = evento.currentTarget.dataset.color;
+      pintarSeleccion();
+    };
+    swatches.forEach((boton) => boton.addEventListener("click", onSwatchClick));
+
+    const terminar = (resultado) => {
+      overlay.classList.add("hidden");
+      a11yModalEditarCarpeta.alCerrar();
+      formulario.removeEventListener("submit", onSubmit);
+      btnCancelar.removeEventListener("click", onCancelar);
+      btnCerrar.removeEventListener("click", onCancelar);
+      overlay.removeEventListener("click", onOverlay);
+      swatches.forEach((boton) => boton.removeEventListener("click", onSwatchClick));
+      resolve(resultado);
+    };
+    const onSubmit = (evento) => { evento.preventDefault(); terminar({ nombre: input.value, color: colorElegido }); };
+    const onCancelar = () => terminar(null);
+    const onOverlay = (evento) => { if (evento.target === overlay) terminar(null); };
+
+    formulario.addEventListener("submit", onSubmit);
+    btnCancelar.addEventListener("click", onCancelar);
+    btnCerrar.addEventListener("click", onCancelar);
+    overlay.addEventListener("click", onOverlay);
+    overlay.classList.remove("hidden");
+    a11yModalEditarCarpeta.alAbrir();
     input.focus();
     input.select();
   });
@@ -454,7 +505,7 @@ function seccionCarpeta(doc, modoCarpeta) {
   if (modoCarpeta === "mover") {
     const opciones = [
       `<option value="">Mover a una carpeta…</option>`,
-      ...carpetas.map((c) => `<option value="${escaparHtml(c)}">${escaparHtml(c)}</option>`),
+      ...carpetas.map((c) => `<option value="${escaparHtml(c.nombre)}">${escaparHtml(c.nombre)}</option>`),
       `<option value="${NUEVA_CARPETA}">+ Nueva carpeta…</option>`
     ].join("");
     return `
@@ -941,9 +992,10 @@ function tarjetaDocumento(doc, modoCarpeta) {
   `;
 }
 
-function tarjetaCarpeta(idCarpeta, nombreMostrado, cantidad, esEspecial) {
+function tarjetaCarpeta(idCarpeta, nombreMostrado, cantidad, esEspecial, color) {
+  const atributoColor = !esEspecial && color ? ` data-carpeta-color="${escaparHtml(color)}"` : "";
   return `
-    <button type="button" class="carpeta-tile${esEspecial ? " carpeta-tile-especial" : ""}" data-carpeta="${escaparHtml(idCarpeta)}">
+    <button type="button" class="carpeta-tile${esEspecial ? " carpeta-tile-especial" : ""}" data-carpeta="${escaparHtml(idCarpeta)}"${atributoColor}>
       <span class="carpeta-tile-flecha" aria-hidden="true">→</span>
       <span class="carpeta-tile-icono">${esEspecial ? icono("documento", 22) : icono("carpeta", 22)}</span>
       <span class="carpeta-tile-nombre">${escaparHtml(nombreMostrado)}</span>
@@ -973,9 +1025,9 @@ function renderizarCarpetas() {
   const grid = document.getElementById("carpetas-grid");
   const sinCarpetaDocs = documentos.filter((d) => !d.carpeta);
 
-  const tiles = carpetas.map((nombre) => {
+  const tiles = carpetas.map(({ nombre, color }) => {
     const cantidad = documentos.filter((d) => d.carpeta === nombre).length;
-    return tarjetaCarpeta(nombre, nombre, cantidad, false);
+    return tarjetaCarpeta(nombre, nombre, cantidad, false, color);
   });
 
   sinCarpetaDocs.forEach((doc) => tiles.push(tarjetaDocumentoSuelto(doc)));
@@ -1146,6 +1198,14 @@ function abrirCarpeta(idCarpeta) {
   const iconoCabecera = document.getElementById("carpeta-detalle-icono");
   iconoCabecera.innerHTML = icono(esSinCarpeta ? "documento" : "carpeta", 20);
   iconoCabecera.classList.toggle("carpeta-detalle-icono-especial", esSinCarpeta);
+  const cabecera = document.getElementById("carpeta-detalle-cabecera");
+  if (esSinCarpeta) {
+    cabecera.removeAttribute("data-carpeta-color");
+  } else {
+    const carpeta = carpetas.find((c) => c.nombre === idCarpeta);
+    cabecera.setAttribute("data-carpeta-color", carpeta?.color || "azul");
+  }
+  document.getElementById("btn-editar-carpeta").classList.toggle("hidden", esSinCarpeta);
   document.getElementById("btn-eliminar-carpeta").classList.toggle("hidden", esSinCarpeta);
   document.getElementById("btn-anadir-documentos").classList.toggle("hidden", esSinCarpeta);
   filtroCarpetaActual = "";
@@ -1231,7 +1291,7 @@ async function crearCarpetaEnBackend(nombre) {
   });
   const datos = await res.json();
   if (!res.ok) throw new Error(datos.error || "No se pudo crear la carpeta.");
-  if (!carpetas.includes(datos.nombre)) carpetas.push(datos.nombre);
+  if (!carpetas.some((c) => c.nombre === datos.nombre)) carpetas.push({ nombre: datos.nombre, color: "azul" });
   return datos.nombre;
 }
 
@@ -1491,6 +1551,33 @@ function inicializarEventos() {
 
   document.getElementById("btn-volver-carpetas").addEventListener("click", volverACarpetas);
 
+  document.getElementById("btn-editar-carpeta").addEventListener("click", async () => {
+    if (carpetaActual === SIN_CARPETA) return;
+    const carpeta = carpetas.find((c) => c.nombre === carpetaActual);
+    const resultado = await mostrarEditarCarpeta({ nombreActual: carpetaActual, colorActual: carpeta?.color || "azul" });
+    if (resultado === null) return;
+    const nombreLimpio = resultado.nombre.trim();
+    if (!nombreLimpio) return;
+    try {
+      const token = await idToken();
+      const res = await fetch(`${BACKEND_URL}/carpetas-documentos`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ nombre_actual: carpetaActual, nombre_nuevo: nombreLimpio, color: resultado.color })
+      });
+      const datos = await res.json();
+      if (!res.ok) throw new Error(datos.error || "No se pudo editar la carpeta.");
+      if (carpeta) { carpeta.nombre = datos.nombre; carpeta.color = datos.color; }
+      if (datos.nombre !== carpetaActual) {
+        documentos.forEach((d) => { if (d.carpeta === carpetaActual) d.carpeta = datos.nombre; });
+      }
+      carpetaActual = datos.nombre;
+      abrirCarpeta(carpetaActual);
+    } catch (e) {
+      mostrarErrorGlobal(e.message || "No se pudo editar la carpeta.");
+    }
+  });
+
   document.getElementById("btn-eliminar-carpeta").addEventListener("click", async () => {
     if (carpetaActual === SIN_CARPETA) return;
     const cantidad = documentos.filter((d) => d.carpeta === carpetaActual).length;
@@ -1509,7 +1596,7 @@ function inicializarEventos() {
       body: JSON.stringify({ nombre: carpetaActual })
     });
     documentos.forEach((d) => { if (d.carpeta === carpetaActual) d.carpeta = ""; });
-    carpetas = carpetas.filter((c) => c !== carpetaActual);
+    carpetas = carpetas.filter((c) => c.nombre !== carpetaActual);
     volverACarpetas();
   });
 

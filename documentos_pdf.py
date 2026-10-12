@@ -772,11 +772,26 @@ def eliminar_documento(db, uid, documento_id):
     return True
 
 
+# Colores disponibles para una carpeta (11/10/2026, edición de
+# carpeta): lista cerrada, no un selector de color libre -- así se
+# garantiza que cada opción tenga su propia pareja clara/oscura ya
+# resuelta en theme.css, en vez de confiar en que cualquier hex que
+# elija el usuario se siga viendo bien en modo oscuro. Sin rojo
+# (--age-danger) a propósito: ese color ya significa "borrar/peligro"
+# en el resto de la web.
+COLORES_CARPETA = {"naranja", "azul", "verde", "morado", "rosa", "turquesa"}
+_COLOR_CARPETA_DEFECTO = "azul"
+
+
 def listar_carpetas(db, uid):
     """Catálogo de carpetas del usuario: las creadas explícitamente con
     crear_carpeta() más cualquier nombre que ya tuviera asignado algún
     documento antes de que existiera este catálogo (para no perder carpetas
-    de usuarios que ya las usaban con el sistema anterior)."""
+    de usuarios que ya las usaban con el sistema anterior). Cada una lleva
+    su color (campo "carpetas_color", mapa nombre->color) -- "azul" por
+    defecto si nunca se ha editado, que es el color que ya tenían todas
+    las carpetas antes de que existiera esta función, así que no cambia
+    nada visualmente hasta que el usuario edite una de verdad."""
     usuario = db.collection("usuarios").document(uid).get().to_dict() or {}
     explicitas = set(usuario.get("carpetas_documentos") or [])
     de_documentos = {
@@ -785,7 +800,11 @@ def listar_carpetas(db, uid):
     }
     de_documentos.discard("")
     de_documentos.discard(None)
-    return sorted(explicitas | de_documentos)
+    colores = usuario.get("carpetas_color") or {}
+    return [
+        {"nombre": nombre, "color": colores.get(nombre, _COLOR_CARPETA_DEFECTO)}
+        for nombre in sorted(explicitas | de_documentos)
+    ]
 
 
 def crear_carpeta(db, uid, nombre):
@@ -812,3 +831,44 @@ def eliminar_carpeta(db, uid, nombre):
     db.collection("usuarios").document(uid).update({
         "carpetas_documentos": firestore.ArrayRemove([nombre])
     })
+
+
+def renombrar_carpeta(db, uid, nombre_actual, nombre_nuevo, color):
+    """Cambia el nombre y/o el color de una carpeta. Devuelve el nombre
+    final (ya normalizado) si todo fue bien, o uno de
+    "vacio"/"duplicado"/"color_invalido" si no -- mismo estilo de retorno
+    simple que crear_carpeta/eliminar_carpeta, sin excepciones.
+
+    Si el nombre cambia, reasigna el campo "carpeta" de todos los
+    documentos que lo tuvieran (mismo patrón de consulta+recorrido que
+    eliminar_carpeta, que ya hace esto mismo para dejarlos en "Sin
+    carpeta") -- aquí en vez de vaciarlo se pone el nombre nuevo, así
+    ningún documento se queda huérfano de su carpeta al renombrarla."""
+    from firebase_admin import firestore
+    nombre_actual = (nombre_actual or "").strip()
+    nombre_nuevo = (nombre_nuevo or "").strip()[:60]
+    if not nombre_actual or not nombre_nuevo:
+        return "vacio"
+    if color not in COLORES_CARPETA:
+        return "color_invalido"
+
+    ref_usuario = db.collection("usuarios").document(uid)
+    cambia_nombre = nombre_nuevo != nombre_actual
+    if cambia_nombre:
+        catalogo = set((ref_usuario.get().to_dict() or {}).get("carpetas_documentos") or [])
+        if nombre_nuevo in catalogo:
+            return "duplicado"
+        docs_ref = db.collection("usuarios").document(uid).collection("documentos")
+        for doc in docs_ref.where("carpeta", "==", nombre_actual).stream():
+            doc.reference.update({"carpeta": nombre_nuevo})
+        ref_usuario.update({"carpetas_documentos": firestore.ArrayRemove([nombre_actual])})
+        ref_usuario.update({"carpetas_documentos": firestore.ArrayUnion([nombre_nuevo])})
+
+    # No hace falta borrar la clave de color del nombre viejo tras un
+    # cambio de nombre: listar_carpetas() solo consulta por el nombre
+    # ACTUAL del catálogo, así que una clave vieja huérfana en
+    # carpetas_color nunca se vuelve a leer -- se queda ahí sin afectar a
+    # nada, más simple que un borrado de campo que esta operación no
+    # necesita de verdad.
+    ref_usuario.update({f"carpetas_color.{nombre_nuevo}": color})
+    return nombre_nuevo

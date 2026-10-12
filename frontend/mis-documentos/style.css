@@ -118,6 +118,20 @@ body {
   gap: 18px;
 }
 
+/* Color de carpeta (11/10/2026, a petición del usuario): un
+   data-carpeta-color="<clave>" en .carpeta-tile/.carpeta-detalle-cabecera
+   fija estas dos variables, que el resto de reglas de abajo ya consumen
+   -- cada clave reutiliza un color con su propio par claro/oscuro ya
+   resuelto en theme.css (sin rojo: ese color ya significa "eliminar" en
+   el resto de la web). Sin data-carpeta-color (p. ej. "Sin carpeta") se
+   cae al --age-card/--age-info de siempre, sin cambios visuales. */
+[data-carpeta-color="naranja"]  { --carpeta-accent: var(--age-primary-dark); --carpeta-accent-bg: var(--age-primary-soft); }
+[data-carpeta-color="azul"]     { --carpeta-accent: var(--age-info);         --carpeta-accent-bg: var(--age-info-bg); }
+[data-carpeta-color="verde"]    { --carpeta-accent: var(--age-success);      --carpeta-accent-bg: var(--age-success-bg); }
+[data-carpeta-color="morado"]   { --carpeta-accent: var(--carpeta-morado);   --carpeta-accent-bg: var(--carpeta-morado-bg); }
+[data-carpeta-color="rosa"]     { --carpeta-accent: var(--carpeta-rosa);     --carpeta-accent-bg: var(--carpeta-rosa-bg); }
+[data-carpeta-color="turquesa"] { --carpeta-accent: var(--carpeta-turquesa); --carpeta-accent-bg: var(--carpeta-turquesa-bg); }
+
 .carpeta-tile {
   position: relative;
   display: flex;
@@ -125,7 +139,7 @@ body {
   align-items: flex-start;
   gap: 0;
   padding: 22px 20px;
-  background: var(--age-card);
+  background: var(--carpeta-accent-bg, var(--age-card));
   border: 1px solid var(--age-border);
   border-radius: var(--age-radius-lg);
   box-shadow: var(--age-shadow);
@@ -163,13 +177,16 @@ body {
 /* Color por tipo (05/08/2026, a petición del usuario): antes carpetas y
    documentos sueltos usaban el mismo color de icono en esta vista mixta --
    había que leer el nombre o el contador ("N documentos" vs. "Sin
-   carpeta") para distinguirlos. Ahora el color del icono lo dice de un
-   vistazo: azul (--age-info) para carpetas, el naranja de marca
-   (--age-primary-dark, el mismo que ya usa el icono de cabecera al abrir
-   un documento) para documentos sueltos. Insignia con fondo suave
-   (29/08/2026): mismo criterio de color, pero en una insignia redondeada
-   en vez de icono suelto, para que la vista de carpetas se lea como una
-   página moderna.*/
+   carpeta") para distinguirlos. El naranja de marca (--age-primary-dark)
+   para documentos sueltos. Insignia con fondo suave (29/08/2026): mismo
+   criterio de color, pero en una insignia redondeada en vez de icono
+   suelto, para que la vista de carpetas se lea como una página moderna.
+   Tratamiento invertido (11/10/2026, color de carpeta editable): ahora
+   que toda la tarjeta puede ir teñida con --carpeta-accent-bg, la
+   insignia pasa a fondo neutro (--age-card) + icono de color, para
+   seguir destacando sobre una tarjeta que ya está teñida -- mismo par
+   color-sobre-neutro de siempre, solo que el neutro vive ahora en la
+   insignia en vez de en toda la tarjeta. */
 .carpeta-tile-icono {
   display: flex;
   align-items: center;
@@ -177,8 +194,8 @@ body {
   width: 46px;
   height: 46px;
   border-radius: var(--age-radius-md);
-  background: var(--age-info-bg);
-  color: var(--age-info);
+  background: var(--age-card);
+  color: var(--carpeta-accent, var(--age-info));
   font-size: 1.4rem;
   margin-bottom: 14px;
 }
@@ -233,7 +250,7 @@ body {
   flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 22px;
-  background: var(--age-card);
+  background: var(--carpeta-accent-bg, var(--age-card));
   border: 1px solid var(--age-border);
   border-radius: var(--age-radius-lg);
   box-shadow: var(--age-shadow);
@@ -254,8 +271,8 @@ body {
   height: 44px;
   flex: none;
   border-radius: var(--age-radius-md);
-  background: var(--age-info-bg);
-  color: var(--age-info);
+  background: var(--age-card);
+  color: var(--carpeta-accent, var(--age-info));
 }
 
 .carpeta-detalle-icono-especial {
@@ -1119,6 +1136,40 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+/* ---------- Editar carpeta: selector de color (11/10/2026) ----------
+   6 círculos fijos, no un input[type=color] libre -- cada uno reutiliza
+   el mismo acento que ya usa la carpeta coloreada (ver
+   [data-carpeta-color] más arriba), así que lo que se ve aquí es
+   exactamente el color que tomará la tarjeta. */
+.carpeta-color-swatches {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.carpeta-color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.15s var(--age-ease), box-shadow 0.15s var(--age-ease);
+}
+
+.carpeta-color-swatch[data-color="naranja"]  { background: var(--age-primary-dark); }
+.carpeta-color-swatch[data-color="azul"]     { background: var(--age-info); }
+.carpeta-color-swatch[data-color="verde"]    { background: var(--age-success); }
+.carpeta-color-swatch[data-color="morado"]   { background: var(--carpeta-morado); }
+.carpeta-color-swatch[data-color="rosa"]     { background: var(--carpeta-rosa); }
+.carpeta-color-swatch[data-color="turquesa"] { background: var(--carpeta-turquesa); }
+
+.carpeta-color-swatch:hover { transform: scale(1.1); }
+
+.carpeta-color-swatch.seleccionado {
+  box-shadow: 0 0 0 2px var(--age-card), 0 0 0 4px var(--age-ink);
 }
 
 /* ---------- Toast "Deshacer" (05/08/2026) ----------
