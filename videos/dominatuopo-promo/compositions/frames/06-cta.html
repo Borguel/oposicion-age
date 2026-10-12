@@ -6,14 +6,16 @@
       #root { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; }
       .c06-bg, .c06-fade { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
       .c06-bg { background: #16181D; }
-      .c06-logo { position: absolute; left: 350px; top: 330px; width: 380px; height: 382px; }
-      .c06-words { position: absolute; left: 76px; width: 928px; top: 790px; display: flex; flex-direction: column; align-items: center; font-family: "Plus Jakarta Sans", Arial, sans-serif; font-weight: 800; color: #FFFFFF; font-size: 210px; line-height: 0.9; letter-spacing: -0.04em; text-transform: lowercase; }
+      .c06-logo { position: absolute; left: 350px; top: 270px; width: 380px; height: 382px; }
+      .c06-words { position: absolute; left: 76px; width: 928px; top: 730px; display: flex; flex-direction: column; align-items: center; font-family: "Plus Jakarta Sans", Arial, sans-serif; font-weight: 800; color: #FFFFFF; font-size: 210px; line-height: 0.9; letter-spacing: -0.04em; text-transform: lowercase; }
       .c06-line { display: flex; gap: 0.22em; white-space: nowrap; }
       .c06-w { display: inline-block; }
       .c06-w.c06-acc { color: #FFA633; }
       .c06-kicker { position: absolute; left: 76px; width: 928px; top: 1290px; text-align: center; font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 30px; letter-spacing: 0.14em; text-transform: uppercase; color: #FFA633; white-space: nowrap; }
       .c06-pillrow { position: absolute; left: 76px; width: 928px; top: 1370px; display: flex; justify-content: center; }
       .c06-pill { background: #FFA633; color: #16181D; font-family: "Plus Jakarta Sans", Arial, sans-serif; font-weight: 800; font-size: 76px; letter-spacing: -0.03em; padding: 30px 56px; white-space: nowrap; }
+      .c06-chips { position: absolute; left: 76px; width: 928px; top: 1170px; display: flex; justify-content: center; gap: 16px; font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 30px; letter-spacing: 0.14em; text-transform: uppercase; }
+      .c06-chip { border: 2px solid #FFA633; color: #FFA633; padding: 12px 26px; }
       .c06-ch { display: inline-block; opacity: 0; }
       .c06-fade { background: #000; opacity: 0; }
     </style>
@@ -23,6 +25,7 @@
       <div class="c06-line"><span class="c06-w">domina</span></div>
       <div class="c06-line"><span class="c06-w">tu</span><span class="c06-w c06-acc">opo</span></div>
     </div>
+    <div class="clip c06-chips" id="c06-chips" data-start="0" data-duration="4" data-track-index="6"><span class="c06-chip" id="c06-k1">GACE</span><span class="c06-chip" id="c06-k2">AGE</span><span class="c06-chip" id="c06-k3">AUXILIAR</span></div>
     <div class="clip c06-kicker" data-start="0" data-duration="4" data-track-index="3" id="c06-kicker">empieza gratis hoy</div>
     <div class="clip c06-pillrow" id="c06-pillrow" data-start="0" data-duration="4" data-track-index="4"><div class="c06-pill" id="c06-pill"></div></div>
     <div class="clip c06-fade" data-start="0" data-duration="4" data-track-index="5" id="c06-fade"></div>
@@ -43,6 +46,10 @@
         // Scene 2: word slams
         var w = document.querySelectorAll(".c06-w");
         tl.fromTo(w, { scale: 1.7, y: -40, opacity: 0 }, { scale: 1, y: 0, opacity: 1, duration: 0.28, ease: "power4.out", stagger: 0.22 }, 1.2);
+        // Chips: the three oposiciones this is for
+        ["#c06-k1", "#c06-k2", "#c06-k3"].forEach(function (id, i) {
+          tl.fromTo(id, { opacity: 0, y: 20, scale: 0.85 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "back.out(2)" }, 1.9 + i * 0.12);
+        });
         // Scene 3: kicker, pill, typed URL
         tl.fromTo("#c06-kicker", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.4);
         tl.fromTo("#c06-pill", { opacity: 0, scaleX: 0.6 }, { opacity: 1, scaleX: 1, duration: 0.35, ease: "back.out(1.6)" }, 2.5);

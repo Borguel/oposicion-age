@@ -37,7 +37,7 @@
       id="root"
       data-composition-id="main"
       data-start="0"
-      data-duration="33.5"
+      data-duration="35"
       data-width="1080"
       data-height="1920"
     >
@@ -47,7 +47,7 @@
         data-composition-id="01-hook"
         data-composition-src="compositions/frames/01-hook.html"
         data-start="0"
-        data-duration="5.4"
+        data-duration="6.4"
         data-track-index="0"
       ></div>
 
@@ -56,7 +56,7 @@
         class="scene"
         data-composition-id="02-mecanismo"
         data-composition-src="compositions/frames/02-mecanismo.html"
-        data-start="5"
+        data-start="6"
         data-duration="8"
         data-track-index="1"
       ></div>
@@ -66,8 +66,8 @@
         class="scene"
         data-composition-id="03-cifras"
         data-composition-src="compositions/frames/03-cifras.html"
-        data-start="12.5"
-        data-duration="6.4"
+        data-start="13.5"
+        data-duration="6.9"
         data-track-index="0"
       ></div>
 
@@ -76,7 +76,7 @@
         class="scene"
         data-composition-id="04-ventajas"
         data-composition-src="compositions/frames/04-ventajas.html"
-        data-start="18.5"
+        data-start="20"
         data-duration="6.6"
         data-track-index="1"
       ></div>
@@ -86,7 +86,7 @@
         class="scene"
         data-composition-id="05-oferta"
         data-composition-src="compositions/frames/05-oferta.html"
-        data-start="24.5"
+        data-start="26"
         data-duration="5.5"
         data-track-index="0"
       ></div>
@@ -96,7 +96,7 @@
         class="scene"
         data-composition-id="06-cta"
         data-composition-src="compositions/frames/06-cta.html"
-        data-start="29.5"
+        data-start="31"
         data-duration="4"
         data-track-index="1"
       ></div>
@@ -108,17 +108,17 @@
       window.__timelines["main"] = gsap.timeline({ paused: true });
       // ── frame transitions (injected by transitions.mjs) ──
       (function () { var tl = window.__timelines["main"];
-        tl.to("#el-01-hook", { scale: 2.5, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power3.in" }, 5);
-        tl.fromTo("#el-02-mecanismo", { scale: 0.5, opacity: 0, filter: "blur(8px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 5);
-        tl.to("#el-02-mecanismo", { x: -1080, duration: 0.5, ease: "power3.inOut" }, 12.5);
-        tl.fromTo("#el-03-cifras", { x: 1080, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 12.5);
-        tl.to("#el-03-cifras", { scaleX: 0, transformOrigin: "left center", duration: 0.4, ease: "power3.inOut" }, 18.5);
-        tl.fromTo("#el-04-ventajas", { scaleX: 0, transformOrigin: "right center", opacity: 1 }, { scaleX: 1, transformOrigin: "right center", opacity: 1, duration: 0.4, ease: "power3.inOut" }, 18.5);
-        tl.to("#el-04-ventajas", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 24.5);
-        tl.fromTo("#el-05-oferta", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" }, 24.5);
-        tl.to("#el-05-oferta", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 29.5);
-        tl.fromTo("#el-06-cta", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 29.5);
-        tl.to({}, { duration: 33.5 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
+        tl.to("#el-01-hook", { scale: 2.5, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power3.in" }, 6);
+        tl.fromTo("#el-02-mecanismo", { scale: 0.5, opacity: 0, filter: "blur(8px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 6);
+        tl.to("#el-02-mecanismo", { x: -1080, duration: 0.5, ease: "power3.inOut" }, 13.5);
+        tl.fromTo("#el-03-cifras", { x: 1080, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 13.5);
+        tl.to("#el-03-cifras", { scaleX: 0, transformOrigin: "left center", duration: 0.4, ease: "power3.inOut" }, 20);
+        tl.fromTo("#el-04-ventajas", { scaleX: 0, transformOrigin: "right center", opacity: 1 }, { scaleX: 1, transformOrigin: "right center", opacity: 1, duration: 0.4, ease: "power3.inOut" }, 20);
+        tl.to("#el-04-ventajas", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 26);
+        tl.fromTo("#el-05-oferta", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" }, 26);
+        tl.to("#el-05-oferta", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 31);
+        tl.fromTo("#el-06-cta", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 31);
+        tl.to({}, { duration: 35 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
       })();
     </script>
   </body>

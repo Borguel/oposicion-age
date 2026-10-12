@@ -1,6 +1,6 @@
 ---
 format: 1080x1920
-duration: 33s
+duration: 36s
 message: "Aprueba tu oposición con tests ilimitados e IA — 7 días Premium gratis en dominatuopo.com"
 arc: Hook → Pain → Mecanismo (PDF→test) → Prueba (cifras) → Ventajas → Oferta → CTA
 audience: opositores a AGE (C1), GACE y Auxiliar que estudian con apuntes sueltos
@@ -22,7 +22,7 @@ music: none
 ## Frame 1 — Hook
 
 - scene: Tres preguntas de dolor se apilan (apuntes, qué repasar, examen) y puente «hay una forma más fácil»
-- duration: 5s
+- duration: 6s
 - transition_in: cut
 - status: animated
 - src: compositions/frames/01-hook.html
@@ -56,10 +56,10 @@ Scene 1 (0.0–1.4s): tarjeta superficie plana ink-black-alt centrada con un cam
 Scene 2 (1.4–2.6s): al «enviar», un estado breve («generando test…») con filete naranja que avanza, y la tarjeta se transforma en pregunta de test: «¿cuál es la forma política del estado español?» (texto real de la home).
 Scene 3 (2.6–5.0s): aparecen A/B/C en cascada con un golpe de 0.25 s entre cada una; la B «monarquía parlamentaria» se ilumina en naranja con check; titular grande debajo: «tu pdf. tu test.» entra en slam. Lectura quieta los últimos 1.2 s.
 
-## Frame 3 — Prueba: las cifras
+## Frame 3 — Test oficial
 
-- scene: Dos cifras enormes cuentan hacia arriba sobre superficie naranja
-- duration: 6s
+- scene: Test Oficial: tarjetas GACE/AGE/Auxiliar, simulacro de un clic y lo que obtienes
+- duration: 6.5s
 - transition_in: push-slide LEFT
 - status: animated
 - src: compositions/frames/03-cifras.html
