@@ -1,6 +1,6 @@
 ---
 format: 1080x1920
-duration: 30s
+duration: 33s
 message: "Aprueba tu oposición con tests ilimitados e IA — 7 días Premium gratis en dominatuopo.com"
 arc: Hook → Pain → Mecanismo (PDF→test) → Prueba (cifras) → Ventajas → Oferta → CTA
 audience: opositores a AGE (C1), GACE y Auxiliar que estudian con apuntes sueltos
@@ -21,8 +21,8 @@ music: none
 
 ## Frame 1 — Hook
 
-- scene: Pregunta que pincha al opositor; la palabra clave cambia por golpe seco
-- duration: 4s
+- scene: Tres preguntas de dolor se apilan (apuntes, qué repasar, examen) y puente «hay una forma más fácil»
+- duration: 5s
 - transition_in: cut
 - status: animated
 - src: compositions/frames/01-hook.html
@@ -38,8 +38,8 @@ Scene 3 (2.4–4.0s): la última palabra («solo?») se queda y el resto de la f
 
 ## Frame 2 — Mecanismo: PDF a test
 
-- scene: Un PDF se convierte en test con IA; la respuesta correcta se marca sola
-- duration: 5s
+- scene: Un PDF cae en la zona de subida, se genera el test, se marca la correcta y aparece la explicación
+- duration: 7.5s
 - transition_in: zoom-through
 - status: animated
 - src: compositions/frames/02-mecanismo.html
@@ -76,7 +76,7 @@ Scene 3 (4.2–6.0s): tercer bloque, de golpe, «< 1 min» con etiqueta «de cer
 ## Frame 4 — Ventajas
 
 - scene: Cuatro ventajas se ensamblan en una lista tipográfica
-- duration: 7s
+- duration: 6s
 - transition_in: squeeze
 - status: animated
 - src: compositions/frames/04-ventajas.html
@@ -92,8 +92,8 @@ Scene 3 (5.6–7.0s): las cuatro líneas se mantienen; la primera palabra de cad
 
 ## Frame 5 — Oferta
 
-- scene: 7 días Premium gratis, sin tarjeta; precio desde 4,99 €
-- duration: 4s
+- scene: 7 días Premium gratis; Básico 4,99 € en segundo plano y Premium 9,99 € destacado
+- duration: 5s
 - transition_in: blur-crossfade
 - status: animated
 - src: compositions/frames/05-oferta.html
