@@ -20,7 +20,7 @@ import soundfile as sf
 from scipy import signal
 
 SR = 44100
-DUR = 46.0
+DUR = 47.0
 BPM = 120
 BEAT = 60.0 / BPM
 N = int(SR * DUR)
@@ -168,7 +168,7 @@ BARS = {
     2: dict(root=48, tones=[55, 60, 64]),  # C
     3: dict(root=43, tones=[55, 59, 62]),  # G
 }
-CUTS = [7.5, 15.0, 24.5, 33.0, 40.5]
+CUTS = [7.5, 15.0, 24.5, 34.0, 41.5]
 
 
 def chord_at(t):

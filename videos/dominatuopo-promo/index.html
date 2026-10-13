@@ -37,7 +37,7 @@
       id="root"
       data-composition-id="main"
       data-start="0"
-      data-duration="46"
+      data-duration="47"
       data-width="1080"
       data-height="1920"
     >
@@ -101,14 +101,14 @@
         data-composition-id="04-ventajas"
         data-composition-src="compositions/frames/04-ventajas.html"
         data-start="24.5"
-        data-duration="9.1"
+        data-duration="10.1"
         data-track-index="1"
       ></div>
       <audio
         id="el-04-ventajas-voice"
         src="assets/voice/voice_04.wav"
         data-start="24.5"
-        data-duration="8.5"
+        data-duration="9.5"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -118,14 +118,14 @@
         class="scene"
         data-composition-id="05-oferta"
         data-composition-src="compositions/frames/05-oferta.html"
-        data-start="33"
+        data-start="34"
         data-duration="8"
         data-track-index="0"
       ></div>
       <audio
         id="el-05-oferta-voice"
         src="assets/voice/voice_05.wav"
-        data-start="33"
+        data-start="34"
         data-duration="7.5"
         data-track-index="10"
         data-volume="1"
@@ -136,14 +136,14 @@
         class="scene"
         data-composition-id="06-cta"
         data-composition-src="compositions/frames/06-cta.html"
-        data-start="40.5"
+        data-start="41.5"
         data-duration="5.5"
         data-track-index="1"
       ></div>
       <audio
         id="el-06-cta-voice"
         src="assets/voice/voice_06.wav"
-        data-start="40.5"
+        data-start="41.5"
         data-duration="5.5"
         data-track-index="10"
         data-volume="1"
@@ -154,7 +154,7 @@
         id="el-bgm"
         src="assets/bgm/bgm.mp3"
         data-start="0"
-        data-duration="46"
+        data-duration="47"
         data-track-index="11"
         data-volume="0.2"
       ></audio>
@@ -172,11 +172,11 @@
         tl.fromTo("#el-03-cifras", { x: 1080, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 15);
         tl.to("#el-03-cifras", { scaleX: 0, transformOrigin: "left center", duration: 0.4, ease: "power3.inOut" }, 24.5);
         tl.fromTo("#el-04-ventajas", { scaleX: 0, transformOrigin: "right center", opacity: 1 }, { scaleX: 1, transformOrigin: "right center", opacity: 1, duration: 0.4, ease: "power3.inOut" }, 24.5);
-        tl.to("#el-04-ventajas", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 33);
-        tl.fromTo("#el-05-oferta", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" }, 33);
-        tl.to("#el-05-oferta", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 40.5);
-        tl.fromTo("#el-06-cta", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 40.5);
-        tl.to({}, { duration: 46 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
+        tl.to("#el-04-ventajas", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 34);
+        tl.fromTo("#el-05-oferta", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" }, 34);
+        tl.to("#el-05-oferta", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 41.5);
+        tl.fromTo("#el-06-cta", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 41.5);
+        tl.to({}, { duration: 47 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
       })();
     </script>
   </body>

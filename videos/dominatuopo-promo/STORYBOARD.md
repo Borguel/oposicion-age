@@ -1,6 +1,6 @@
 ---
 format: 1080x1920
-duration: 46s
+duration: 47s
 message: "Aprueba tu oposición con tests ilimitados e IA — 7 días Premium gratis en dominatuopo.com"
 arc: Hook → Pain → Mecanismo (PDF→test) → Prueba (cifras) → Ventajas → Oferta → CTA
 audience: opositores a AGE (C1), GACE y Auxiliar que estudian con apuntes sueltos
@@ -77,7 +77,7 @@ Scene 3 (4.2–6.0s): tercer bloque, de golpe, «< 1 min» con etiqueta «de cer
 ## Frame 4 — Ventajas
 
 - scene: Cuatro ventajas se ensamblan en una lista tipográfica
-- duration: 8.5s
+- duration: 9.5s
 - transition_in: squeeze
 - status: animated
 - src: compositions/frames/04-ventajas.html
