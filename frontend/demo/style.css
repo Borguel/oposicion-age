@@ -6,6 +6,13 @@
 }
 
 .demo-header h1 {
+  /* Sin esto el h1 se ve negro (var(--age-ink)): esta página también
+     carga /test-generator/style.css, que fija "h1, h2, h3 { color:
+     var(--age-ink); }" global -- una declaración directa sobre el propio
+     elemento gana siempre a la herencia del "color: #fff" de
+     .demo-header, por mucho que ese ancestro lo fije. Mismo blindaje que
+     ya usa .testherr-header h1 en ese mismo archivo. */
+  color: #fff;
   margin: 14px 0 8px;
   font-size: 2rem;
 }
