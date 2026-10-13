@@ -65,12 +65,12 @@
       // Beat A (0.15–2.9): the audience, stated plainly (VO: "¿Opositas a la Administración del Estado?")
       tl.fromTo("#h01-a", { opacity: 0, y: 50, filter: "blur(14px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.6, ease: "expo.out" }, 0.15);
       tl.fromTo("#h01-asub", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 1.0);
-      tl.to(["#h01-a", "#h01-asub"], { opacity: 0, y: -40, duration: 0.3, ease: "power2.in" }, 2.85);
+      tl.to(["#h01-a", "#h01-asub"], { opacity: 0, y: -40, duration: 0.3, ease: "power2.in" }, 2.45);
 
       // Beat B: two pain questions, each on its spoken cue
-      tl.fromTo("#h01-q1", { opacity: 0, y: 60, filter: "blur(14px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, 3.0);
+      tl.fromTo("#h01-q1", { opacity: 0, y: 60, filter: "blur(14px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, 2.9);
       tl.to("#h01-q1", { opacity: 0.35, duration: 0.35, ease: "power2.out" }, 4.85);
-      tl.fromTo("#h01-q3", { opacity: 0, y: 60, scale: 1.06, filter: "blur(14px)", transformOrigin: "0% 50%" }, { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 0.6, ease: "expo.out" }, 4.9);
+      tl.fromTo("#h01-q3", { opacity: 0, y: 60, scale: 1.06, filter: "blur(14px)", transformOrigin: "0% 50%" }, { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 0.6, ease: "expo.out" }, 4.95);
       tl.to({}, { duration: 0.01 }, 7.49);
       window.__timelines["01-hook"] = tl;
     </script>

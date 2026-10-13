@@ -1,8 +1,8 @@
 <template>
-  <div id="root" data-composition-id="04-ventajas" data-width="1080" data-height="1920" data-start="0" data-duration="9.6">
-    <div class="clip f04-ventajas-bg" id="f04-bg" data-start="0" data-duration="9.6" data-track-index="0"></div>
+  <div id="root" data-composition-id="04-ventajas" data-width="1080" data-height="1920" data-start="0" data-duration="9.1">
+    <div class="clip f04-ventajas-bg" id="f04-bg" data-start="0" data-duration="9.1" data-track-index="0"></div>
 
-    <div class="clip f04-ventajas-head" id="f04-head" data-start="0" data-duration="9.6" data-track-index="1">
+    <div class="clip f04-ventajas-head" id="f04-head" data-start="0" data-duration="9.1" data-track-index="1">
       <div class="f04-ventajas-kicker" id="f04-ventajas-kicker"><span class="f04-ventajas-stub"></span>todo en un solo sitio</div>
       <h1 class="f04-ventajas-title">
         <span class="f04-ventajas-tl"><span id="f04-ventajas-t1">estudia</span></span>
@@ -10,7 +10,7 @@
       </h1>
     </div>
 
-    <div class="clip f04-ventajas-list" id="f04-list" data-start="0" data-duration="9.6" data-track-index="2">
+    <div class="clip f04-ventajas-list" id="f04-list" data-start="0" data-duration="9.1" data-track-index="2">
       <div class="f04-ventajas-row" id="f04-ventajas-r1">
         <div class="f04-ventajas-rule"></div>
         <div class="f04-ventajas-body">
@@ -95,7 +95,7 @@
 
       // Scene 2 (1.4-5.6s): four lines, ~1s each
       for (var i = 1; i <= 4; i++) {
-        var t = [0.4, 1.9, 4.4, 6.7][i - 1];
+        var t = [0.35, 1.65, 4.5, 6.9][i - 1];
         var sel = "#f04-ventajas-r" + i;
         tl.fromTo(sel + " .f04-ventajas-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power3.inOut" }, t);
         tl.fromTo(sel + " .f04-ventajas-mark", { opacity: 0, scale: 0.4, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(2.2)" }, t + 0.15);
@@ -104,9 +104,9 @@
 
       // Scene 3 (5.6-7.0s): first words cascade to orange, then rest
       for (var j = 1; j <= 4; j++) {
-        tl.to("#f04-ventajas-r" + j + " .f04-ventajas-fw", { color: "#FFA633", duration: 0.2, ease: "power2.out" }, 7.9 + (j - 1) * 0.15);
+        tl.to("#f04-ventajas-r" + j + " .f04-ventajas-fw", { color: "#FFA633", duration: 0.2, ease: "power2.out" }, 7.5 + (j - 1) * 0.12);
       }
-      tl.to({}, { duration: 0.01 }, 8.99);
+      tl.to({}, { duration: 0.01 }, 8.49);
 
       window.__timelines["04-ventajas"] = tl;
     </script>

@@ -168,7 +168,7 @@ BARS = {
     2: dict(root=48, tones=[55, 60, 64]),  # C
     3: dict(root=43, tones=[55, 59, 62]),  # G
 }
-CUTS = [7.5, 15.5, 24, 33, 40]
+CUTS = [7.5, 15.0, 24.5, 33.0, 40.5]
 
 
 def chord_at(t):
