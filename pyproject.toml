@@ -22,7 +22,11 @@ select = ["E4", "E7", "E9", "F"]
 # lo mismo a nivel de import, redundante.
 skips = ["B311", "B403", "B404"]
 # tests/ y sin-uso/ no son código de producción; frontend/ es JS, no Python.
-exclude_dirs = ["tests", "tests-frontend", "sin-uso", "frontend", ".git"]
+# videos/ es tooling puntual de generación de vídeos promocionales (música,
+# locución con ffmpeg/IA) -- no se despliega ni es parte de la app, mismo
+# papel que sin-uso/, no del código real de producción que vale la pena
+# escanear aquí.
+exclude_dirs = ["tests", "tests-frontend", "sin-uso", "frontend", "videos", ".git"]
 
 [tool.coverage.run]
 # Solo informativo en CI (ver .github/workflows/ci.yml) -- ningún umbral
