@@ -1,0 +1,162 @@
+[a] Saltar al contenido principal
+[span] Domina tu Opo
+[a] Oposiciones
+[a] Cómo funciona
+[span] Modo oscuro
+[a] Iniciar sesión
+[h1] Prepara tu oposición sin perderte entre apuntes
+[p] Tests ilimitados sobre el temario oficial de tu oposición, herramientas con inteligencia artificial avanzada para tus propios documentos, y estadísticas claras de tu progreso — todo en un solo sitio.
+[a] Empezar mi prueba gratuita
+[a] Ver planes
+[a] Prueba 5 preguntas gratis, sin registrarte
+[p] ¿Cuál es la forma política del Estado español?
+[div] República
+[div] Monarquía parlamentaria
+[div] Estado federal
+[strong] 7 días de Premium gratis, sin tarjeta
+[span] Accede a todas las herramientas desde el primer día. Después, tú decides si sigues.
+[a] Crear cuenta gratis
+[strong] +1.655
+[span] preguntas oficiales disponibles
+[strong] +12.223
+[span] preguntas generadas por opositores
+[h2] Todo lo que necesitas para aprobar tu oposición
+[p] Herramientas pensadas para opositores que quieren estudiar de forma inteligente, no solo memorizar.
+[h3] Tests personalizados y oficiales
+[p] Elige los temas que quieres practicar, simula exámenes con preguntas reales o deja que la IA adapte el nivel a cómo vas rindiendo.
+[h3] Intentos ilimitados
+[p] Repite el último test, repasa solo las preguntas que has fallado y vuelve sobre cualquier tema tantas veces como necesites.
+[h3] IA avanzada
+[p] Nuestro motor de IA analiza tus propios apuntes o el BOE y genera preguntas relevantes con explicaciones detalladas para cada respuesta.
+[h3] Resultados instantáneos
+[p] Corrección automática, feedback inmediato y estadísticas por tema para saber exactamente dónde flojeas.
+[h2] ¿Cómo funciona?
+[p] De cero a tu primer test en menos de un minuto.
+[h3] Elige tu oposición
+[p] Selecciona la oposición que estás preparando entre las disponibles — cada vez añadimos más. Puedes estudiar varias a la vez y llevar el progreso de cada una por separado.
+[h3] Empieza tu prueba Premium gratis
+[p] Crea tu cuenta y consigue 7 días de acceso Premium completo, sin tarjeta: tests oficiales, tus estadísticas y todas las herramientas de IA.
+[h3] Sube tus propios apuntes
+[p] Un PDF de tus resúmenes, del BOE o de cualquier temario: la IA lo convierte en tests, tarjetas, esquemas o resúmenes.
+[h3] Estudia y repasa sin límite
+[p] Chatea con Tu Tutor sobre cualquier duda del temario o del proceso selectivo y repite lo que necesites hasta dominarlo.
+[h2] Todo lo que puedes hacer en Domina tu Opo
+[p] Un vistazo a las herramientas que tienes disponibles, todas conectadas entre sí.
+[h3] Tests que se adaptan a ti
+[p] Genera exámenes
+[strong] personalizados
+[p] eligiendo los temas que quieres reforzar, ponte a prueba con
+[strong] preguntas oficiales
+[p] reales de convocatorias anteriores, o repite un test centrándote solo en tus
+[strong] preguntas falladas
+[p] o favoritas para reforzar justo lo que más se te resiste.
+[a] Generar un test
+[div] Primera opción
+[div] Segunda opción
+[div] Tercera opción
+[h3] Tarjetas de memoria
+[p] Avanza más rápido con
+[strong] memorización activa
+[p] . Convierte cualquier PDF en tarjetas de pregunta/respuesta, repásalas en modo estudio y trabaja la
+[strong] memoria a largo plazo
+[p] en vez de releer lo mismo una y otra vez.
+[a] Crear tarjetas de memoria
+[div] ¿Qué son las Cortes Generales?
+[h3] Esquemas y resúmenes automáticos
+[p] Sube un documento largo y consigue un
+[strong] esquema jerárquico
+[p] listo para repasar de un vistazo, o un
+[strong] resumen
+[p] con los puntos clave para sintetizar un tema entero en minutos.
+[a] Generar un esquema
+[div] Ejemplo: La Constitución Española
+[div] Título Preliminar
+[span] I.1
+[div] Fundamentos del Estado
+[span] I.2
+[div] La bandera y la capital
+[div] Derechos y deberes fundamentales
+[span] II.1
+[div] Derechos fundamentales y libertades
+[h3] Tu Tutor
+[p] Resuelve cualquier duda del temario charlando con la IA como lo harías con un compañero de estudio, o pregúntale por la
+[strong] estructura del examen, plazos y consejos
+[p] de cara a la prueba: Tu Tutor entiende qué necesitas y responde en consecuencia.
+[a] Abrir Tu Tutor
+[div] ¿En qué puedo ayudarte hoy?
+[div] Explícame el Título Preliminar
+[div] Claro, empieza estableciendo que...
+[h3] Estadísticas de tu progreso
+[p] Aciertos, fallos, nota media, temas más estudiados y temas pendientes — todo separado por oposición, para que sepas exactamente qué repasar antes del examen.
+[a] Ver mis estadísticas
+[div] 14h 32m estudiadas
+[span] Aciertos 62%
+[span] Fallos 28%
+[span] Blanco 10%
+[span] Temas estudiados
+[strong] 32 de 45
+[h2] ¿Cómo se usa cada herramienta?
+[p] Guías paso a paso con capturas de cada pantalla, para que sepas qué hace cada botón antes de entrar.
+[span] Tu Tutor
+[span] Cómo preguntar dudas, el historial de conversaciones y la personalización del chat.
+[span] Test Personalizado
+[span] Elegir temas, número de preguntas, reparto, favoritos y descarga en PDF.
+[span] Test Oficial
+[span] Simulacro de un clic o tu propio test con preguntas de exámenes reales.
+[span] Herramientas IA (tus PDF)
+[span] Sube un PDF y sácale test, resumen, esquema, tarjetas o un chat sobre él.
+[a] Ver toda la guía de uso
+[h2] Elige tu plan
+[p] Empieza con 7 días de Premium gratis, sin tarjeta. Sin permanencia: cancela cuando quieras desde "Mi cuenta".
+[h3] Básico
+[div] 4,99€
+[span] /mes
+[p] Test oficial y personalizado con IA (hasta 50 preguntas/día) y análisis de rendimiento (hasta 20 usos/mes).
+[div] Más completo
+[h3] Premium
+[div] 9,99€
+[span] /mes
+[p] Todo ilimitado, además de las herramientas desde tus PDF y Tu Tutor, el chat premium de IA.
+[a] Ver todos los planes en detalle
+[h2] Guías por oposición
+[p] Temario, examen, plazas de la última convocatoria y sueldo, explicado para cada cuerpo.
+[span] Administrativo del Estado (C1)
+[span] Cuerpo General Administrativo: temario, examen y plazas de la última OEP.
+[span] GACE (A2)
+[span] Gestión de la Administración Civil del Estado: temario, examen y plazas.
+[span] Auxiliar Administrativo (C2)
+[span] Cuerpo General Auxiliar: temario, examen y plazas de la última OEP.
+[a] Ver todos los artículos del blog
+[h2] Preguntas frecuentes
+[p] Todo lo que necesitas saber sobre Domina tu Opo.
+[summary] ¿Cómo funciona la prueba gratuita de 7 días?
+[p] Al crear tu cuenta empiezas automáticamente con 7 días de acceso Premium completo, sin necesidad de tarjeta. Cuando termine, si no has contratado un plan de pago, tu cuenta queda bloqueada (tus datos y tests ya hechos se conservan) hasta que elijas Básico o Premium.
+[summary] ¿Para qué oposiciones sirve la web?
+[p] Preparamos oposiciones de la Administración Pública y vamos añadiendo más continuamente. Puedes estudiar varias a la vez: cada una tiene su propio temario, tests y estadísticas independientes.
+[summary] ¿Qué tipo de archivos puedo subir a las herramientas de IA?
+[p] De momento admitimos documentos en formato PDF de hasta 10 MB. Si tienes tus apuntes en Word, expórtalos a PDF antes de subirlos.
+[summary] ¿Qué pasa si mi PDF está escaneado como imagen?
+[p] Nuestras herramientas leen el texto del documento, así que necesitan que el PDF tenga texto seleccionable (no solo una foto o escaneo sin OCR). Si tu PDF es un escaneo, prueba a pasarlo antes por un conversor de "PDF escaneado a texto".
+[summary] ¿Cuántas preguntas puedo generar por test?
+[p] Puedes pedir entre 1 y 100 preguntas por test, tanto en los generadores desde el temario oficial como en los que parten de tu propio PDF.
+[summary] ¿Los planes de pago caducan o son una suscripción?
+[p] Son una suscripción mensual, no un pack de créditos que caduque: mientras tu plan esté activo tienes acceso ilimitado a todo lo que incluye. Puedes cancelarla cuando quieras desde "Mi cuenta" y seguirá activa hasta el final del periodo ya pagado.
+[summary] ¿Puedo repetir los tests que ya he generado?
+[p] Sí, tantas veces como quieras. Puedes repetir tu último test completo desde "Tests → Repetir último test", o quedarte solo con las preguntas que fallaste desde "Preguntas falladas".
+[summary] ¿Por qué mi test tiene a veces menos preguntas de las que pedí?
+[p] Puede pasar si el tema elegido tiene poco contenido disponible en el temario, o si alguna pregunta generada por la IA no supera nuestras validaciones de calidad. En esos casos seguimos intentándolo con más contenido del tema antes de darte el test, para acercarnos lo máximo posible al número que pediste.
+[h2] ¿Listo para empezar a practicar?
+[p] 7 días de Premium gratis, sin tarjeta. Después, tú decides si sigues.
+[a] Empezar mi prueba gratuita
+[a] Ver planes
+[span] © 2026 Domina tu Opo
+[a] Avisos oficiales
+[a] Aviso legal
+[a] Términos y condiciones
+[a] Privacidad
+[p] Usamos almacenamiento técnico necesario para que puedas iniciar sesión y usar la web
+      (por ejemplo, para recordar tu sesión y la oposición que estás estudiando), y analítica
+      propia para entender el uso de la web y mejorarla. No usamos cookies de publicidad.
+      Más información en nuestra
+[a] Política de Cookies
+[button] Aceptar

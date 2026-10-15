@@ -1,0 +1,80 @@
+<template>
+  <div id="root" data-composition-id="03-verifica" data-start="0" data-duration="6.9" data-width="1080" data-height="1920">
+    <style>
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: url("assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2"); }
+      @font-face { font-family: "IBM Plex Mono"; font-weight: 600; src: url("assets/fonts/IBMPlexMono-SemiBold.woff2") format("woff2"); }
+      #root { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; font-family: "Plus Jakarta Sans", Arial, sans-serif; color: #FFFFFF; }
+      #root .clip { position: absolute; }
+      .mono { font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+      .c3-bg { left: 0; top: 0; width: 1080px; height: 1920px; background: #FFA633; }
+      .c3-step { left: 76px; top: 150px; width: 928px; font-weight: 800; font-size: 76px; letter-spacing: -0.03em; text-transform: lowercase; color: #16181D; display: flex; align-items: baseline; gap: 22px; }
+      .c3-step b { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 34px; letter-spacing: 0.06em; }
+      .c3-ia { left: 76px; top: 290px; width: 928px; height: 120px; }
+      .c3-tag { position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; gap: 16px; background: #16181D; color: #FFA633; padding: 18px 28px; font-size: 32px; }
+      .c3-title { left: 76px; top: 440px; width: 928px; font-weight: 800; font-size: 128px; line-height: 0.92; letter-spacing: -0.045em; text-transform: lowercase; color: #16181D; }
+      .c3-cards { left: 76px; top: 800px; width: 928px; height: 760px; }
+      .c3-card { position: absolute; left: 0; width: 928px; height: 210px; background: #16181D; color: #FFFFFF; overflow: hidden; }
+      .c3-card .q { position: absolute; left: 36px; top: 34px; width: 740px; font-weight: 600; font-size: 38px; line-height: 1.2; letter-spacing: -0.01em; }
+      .c3-card .sk { position: absolute; left: 36px; top: 40px; width: 700px; height: 22px; background: #2b2d34; }
+      .c3-card .sk2 { top: 84px; width: 520px; }
+      .c3-card .meta { position: absolute; left: 36px; bottom: 28px; font-size: 22px; color: rgba(255,255,255,0.5); }
+      .c3-card .bd { position: absolute; right: 32px; top: 36px; width: 110px; height: 110px; border-radius: 999px; display: flex; align-items: center; justify-content: center; opacity: 0; }
+      .c3-card .bd.ok { background: #1E9E63; }
+      .c3-card .bd.no { background: #E0473F; }
+      .c3-card .bd svg { width: 58px; height: 58px; }
+      .c3-card .scan { position: absolute; left: 0; top: 0; width: 8px; height: 210px; background: #FFA633; opacity: 0; }
+      .c3-card .tx { position: absolute; right: 32px; bottom: 28px; font-size: 24px; opacity: 0; }
+      #c3-k1 { top: 0; } #c3-k2 { top: 245px; } #c3-k3 { top: 490px; }
+    </style>
+    <div class="clip c3-bg" id="c3-bg" data-start="0" data-duration="6.9" data-track-index="0"></div>
+    <div class="clip c3-step" id="c3-step" data-start="0" data-duration="6.9" data-track-index="1"><b>02</b><span>la ia crea y verifica</span></div>
+    <div class="clip c3-ia" id="c3-ia" data-start="0" data-duration="6.9" data-track-index="2">
+      <div class="c3-tag mono" id="c3-tag1" style="opacity:0">● ia 1 · crea preguntas</div>
+      <div class="c3-tag mono" id="c3-tag2" style="opacity:0">✓ ia 2 · verifica cada respuesta</div>
+    </div>
+    <div class="clip c3-title" id="c3-title" data-start="0" data-duration="6.9" data-track-index="3">temario<br>oficial.</div>
+    <div class="clip c3-cards" id="c3-cards" data-start="0" data-duration="6.9" data-track-index="4">
+      <div class="c3-card" id="c3-k1"><div class="sk"></div><div class="sk sk2"></div><div class="q" style="opacity:0">¿Quién sanciona las leyes aprobadas por las Cortes Generales?</div><div class="meta mono">pregunta 1</div><div class="scan"></div><div class="bd ok"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="square"><path d="M4 12l5 5 11-11"/></svg></div></div>
+      <div class="c3-card" id="c3-k2"><div class="sk"></div><div class="sk sk2"></div><div class="q" style="opacity:0">La excedencia forzosa da derecho a…</div><div class="meta mono">pregunta 2</div><div class="scan"></div><div class="bd ok"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="square"><path d="M4 12l5 5 11-11"/></svg></div></div>
+      <div class="c3-card" id="c3-k3"><div class="sk"></div><div class="sk sk2"></div><div class="q" id="c3-q3a" data-layout-allow-overlap style="opacity:0">¿Qué órgano elabora el anteproyecto de ley?</div><div class="q" id="c3-q3b" data-layout-allow-overlap style="opacity:0">¿Cuál es la forma política del Estado español?</div><div class="meta mono">pregunta 3</div><div class="scan"></div><div class="bd no" id="c3-no"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="square"><path d="M5 5l14 14M19 5L5 19"/></svg></div><div class="bd ok" id="c3-ok3"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="square"><path d="M4 12l5 5 11-11"/></svg></div><div class="tx mono" id="c3-tx" style="color:#E0473F">descartada</div><div class="tx mono" id="c3-tx2" style="color:#1E9E63">nueva, verificada</div></div>
+    </div>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#c3-step", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.05);
+      // VO 0.4–3.3 "La IA crea las preguntas del temario oficial"
+      tl.fromTo("#c3-tag1", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 0.4);
+      tl.fromTo("#c3-title", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 0.8);
+      ["#c3-k1", "#c3-k2", "#c3-k3"].forEach(function (id, i) {
+        const t = 1.1 + i * 0.7;
+        tl.fromTo(id, { opacity: 0, x: 90 }, { opacity: 1, x: 0, duration: 0.45, ease: "expo.out" }, t);
+        tl.to(id + " .sk", { opacity: 0, duration: 0.15, ease: "none" }, t + 0.55);
+        tl.to(id + " .q:not(#c3-q3b)", { opacity: 1, duration: 0.25, ease: "power2.out" }, t + 0.55);
+      });
+      // (card 3 shows the discarded question first)
+      tl.to("#c3-q3b", { opacity: 0, duration: 0.01 }, 0);
+      // VO 3.5–5.9 "y una segunda IA verifica cada respuesta"
+      tl.to("#c3-tag1", { opacity: 0, y: -16, duration: 0.2, ease: "power2.in" }, 3.4);
+      tl.fromTo("#c3-tag2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 3.5);
+      ["#c3-k1", "#c3-k2"].forEach(function (id, i) {
+        const t = 3.8 + i * 0.45;
+        tl.fromTo(id + " .scan", { opacity: 1, x: 0 }, { opacity: 1, x: 920, duration: 0.4, ease: "power1.inOut" }, t);
+        tl.to(id + " .scan", { opacity: 0, duration: 0.01 }, t + 0.41);
+        tl.fromTo(id + " .bd", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, t + 0.35);
+      });
+      tl.fromTo("#c3-k3 .scan", { opacity: 1, x: 0 }, { opacity: 1, x: 920, duration: 0.4, ease: "power1.inOut" }, 4.75);
+      tl.to("#c3-k3 .scan", { opacity: 0, duration: 0.01 }, 5.16);
+      tl.fromTo("#c3-no", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, 5.1);
+      tl.fromTo("#c3-tx", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 5.2);
+      // discarded → regenerated and verified
+      tl.to(["#c3-q3a", "#c3-no", "#c3-tx"], { opacity: 0, duration: 0.2, ease: "power1.in" }, 5.65);
+      tl.fromTo("#c3-q3b", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 5.85);
+      tl.fromTo("#c3-ok3", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, 6.0);
+      tl.fromTo("#c3-tx2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 6.05);
+      tl.to({}, { duration: 0.01 }, 6.49);
+      window.__timelines["03-verifica"] = tl;
+    </script>
+  </div>
+</template>
