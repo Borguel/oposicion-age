@@ -1,5 +1,5 @@
 <template>
-  <div id="root" data-composition-id="03-verifica" data-start="0" data-duration="6.9" data-width="1080" data-height="1920">
+  <div id="root" data-composition-id="03-verifica" data-start="0" data-duration="8.4" data-width="1080" data-height="1920">
     <style>
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: url("assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2"); }
@@ -27,14 +27,14 @@
       .c3-card .tx { position: absolute; right: 32px; bottom: 28px; font-size: 24px; opacity: 0; }
       #c3-k1 { top: 0; } #c3-k2 { top: 245px; } #c3-k3 { top: 490px; }
     </style>
-    <div class="clip c3-bg" id="c3-bg" data-start="0" data-duration="6.9" data-track-index="0"></div>
-    <div class="clip c3-step" id="c3-step" data-start="0" data-duration="6.9" data-track-index="1"><b>02</b><span>la ia crea y verifica</span></div>
-    <div class="clip c3-ia" id="c3-ia" data-start="0" data-duration="6.9" data-track-index="2">
+    <div class="clip c3-bg" id="c3-bg" data-start="0" data-duration="8.4" data-track-index="0"></div>
+    <div class="clip c3-step" id="c3-step" data-start="0" data-duration="8.4" data-track-index="1"><b>02</b><span>la ia crea y verifica</span></div>
+    <div class="clip c3-ia" id="c3-ia" data-start="0" data-duration="8.4" data-track-index="2">
       <div class="c3-tag mono" id="c3-tag1" style="opacity:0">● ia 1 · crea preguntas</div>
       <div class="c3-tag mono" id="c3-tag2" style="opacity:0">✓ ia 2 · verifica cada respuesta</div>
     </div>
-    <div class="clip c3-title" id="c3-title" data-start="0" data-duration="6.9" data-track-index="3">temario<br>oficial.</div>
-    <div class="clip c3-cards" id="c3-cards" data-start="0" data-duration="6.9" data-track-index="4">
+    <div class="clip c3-title" id="c3-title" data-start="0" data-duration="8.4" data-track-index="3">temario<br>oficial.</div>
+    <div class="clip c3-cards" id="c3-cards" data-start="0" data-duration="8.4" data-track-index="4">
       <div class="c3-card" id="c3-k1"><div class="sk"></div><div class="sk sk2"></div><div class="q" style="opacity:0">¿Quién sanciona las leyes aprobadas por las Cortes Generales?</div><div class="meta mono">pregunta 1</div><div class="scan"></div><div class="bd ok"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="square"><path d="M4 12l5 5 11-11"/></svg></div></div>
       <div class="c3-card" id="c3-k2"><div class="sk"></div><div class="sk sk2"></div><div class="q" style="opacity:0">La excedencia forzosa da derecho a…</div><div class="meta mono">pregunta 2</div><div class="scan"></div><div class="bd ok"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="square"><path d="M4 12l5 5 11-11"/></svg></div></div>
       <div class="c3-card" id="c3-k3"><div class="sk"></div><div class="sk sk2"></div><div class="q" id="c3-q3a" data-layout-allow-overlap style="opacity:0">¿Qué órgano elabora el anteproyecto de ley?</div><div class="q" id="c3-q3b" data-layout-allow-overlap style="opacity:0">¿Cuál es la forma política del Estado español?</div><div class="meta mono">pregunta 3</div><div class="scan"></div><div class="bd no" id="c3-no"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="square"><path d="M5 5l14 14M19 5L5 19"/></svg></div><div class="bd ok" id="c3-ok3"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="square"><path d="M4 12l5 5 11-11"/></svg></div><div class="tx mono" id="c3-tx" style="color:#E0473F">descartada</div><div class="tx mono" id="c3-tx2" style="color:#1E9E63">nueva, verificada</div></div>
@@ -56,24 +56,24 @@
       // (card 3 shows the discarded question first)
       tl.to("#c3-q3b", { opacity: 0, duration: 0.01 }, 0);
       // VO 3.5–5.9 "y una segunda IA verifica cada respuesta"
-      tl.to("#c3-tag1", { opacity: 0, y: -16, duration: 0.2, ease: "power2.in" }, 3.4);
-      tl.fromTo("#c3-tag2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 3.5);
+      tl.to("#c3-tag1", { opacity: 0, y: -16, duration: 0.2, ease: "power2.in" }, 3.9);
+      tl.fromTo("#c3-tag2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 4.0);
       ["#c3-k1", "#c3-k2"].forEach(function (id, i) {
-        const t = 3.8 + i * 0.45;
+        const t = 4.45 + i * 0.45;
         tl.fromTo(id + " .scan", { opacity: 1, x: 0 }, { opacity: 1, x: 920, duration: 0.4, ease: "power1.inOut" }, t);
         tl.to(id + " .scan", { opacity: 0, duration: 0.01 }, t + 0.41);
         tl.fromTo(id + " .bd", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, t + 0.35);
       });
-      tl.fromTo("#c3-k3 .scan", { opacity: 1, x: 0 }, { opacity: 1, x: 920, duration: 0.4, ease: "power1.inOut" }, 4.75);
-      tl.to("#c3-k3 .scan", { opacity: 0, duration: 0.01 }, 5.16);
-      tl.fromTo("#c3-no", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, 5.1);
-      tl.fromTo("#c3-tx", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 5.2);
+      tl.fromTo("#c3-k3 .scan", { opacity: 1, x: 0 }, { opacity: 1, x: 920, duration: 0.4, ease: "power1.inOut" }, 5.35);
+      tl.to("#c3-k3 .scan", { opacity: 0, duration: 0.01 }, 5.76);
+      tl.fromTo("#c3-no", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, 5.7);
+      tl.fromTo("#c3-tx", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 5.8);
       // discarded → regenerated and verified
-      tl.to(["#c3-q3a", "#c3-no", "#c3-tx"], { opacity: 0, duration: 0.2, ease: "power1.in" }, 5.65);
-      tl.fromTo("#c3-q3b", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 5.85);
-      tl.fromTo("#c3-ok3", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, 6.0);
-      tl.fromTo("#c3-tx2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 6.05);
-      tl.to({}, { duration: 0.01 }, 6.49);
+      tl.to(["#c3-q3a", "#c3-no", "#c3-tx"], { opacity: 0, duration: 0.2, ease: "power1.in" }, 6.3);
+      tl.fromTo("#c3-q3b", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 6.5);
+      tl.fromTo("#c3-ok3", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, 6.65);
+      tl.fromTo("#c3-tx2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 6.7);
+      tl.to({}, { duration: 0.01 }, 7.99);
       window.__timelines["03-verifica"] = tl;
     </script>
   </div>

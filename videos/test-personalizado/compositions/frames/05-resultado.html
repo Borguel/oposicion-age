@@ -1,5 +1,5 @@
 <template>
-  <div id="root" data-composition-id="05-resultado" data-start="0" data-duration="5.5" data-width="1080" data-height="1920">
+  <div id="root" data-composition-id="05-resultado" data-start="0" data-duration="5" data-width="1080" data-height="1920">
     <style>
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: url("assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2"); }
@@ -32,9 +32,9 @@
       .c5-row.bad .nm, .c5-row.bad .pc { color: #B3261E; }
       .c5-flag { position: absolute; right: 0; top: 94px; background: #B3261E; color: #fff; font-size: 20px; padding: 6px 14px; opacity: 0; }
     </style>
-    <div class="clip c5-bg" id="c5-bg" data-start="0" data-duration="5.5" data-track-index="0"></div>
-    <div class="clip c5-step" id="c5-step" data-start="0" data-duration="5.5" data-track-index="1"><b>04</b><span>tu resultado</span></div>
-    <div class="clip c5-res" id="c5-res" data-start="0" data-duration="5.5" data-track-index="2">
+    <div class="clip c5-bg" id="c5-bg" data-start="0" data-duration="5" data-track-index="0"></div>
+    <div class="clip c5-step" id="c5-step" data-start="0" data-duration="5" data-track-index="1"><b>04</b><span>tu resultado</span></div>
+    <div class="clip c5-res" id="c5-res" data-start="0" data-duration="5" data-track-index="2">
       <div class="c5-lab mono">nota de este test</div>
       <svg class="c5-ring" viewBox="0 0 340 340"><circle cx="170" cy="170" r="140" fill="none" stroke="#2b2d34" stroke-width="26"/><circle id="c5-arc" cx="170" cy="170" r="140" fill="none" stroke="#FFA633" stroke-width="26" stroke-linecap="butt" transform="rotate(-90 170 170)" stroke-dasharray="879.6" stroke-dashoffset="879.6"/></svg>
       <div class="c5-pct"><b id="c5-pctv">0 %</b><span class="mono">aciertos</span></div>
@@ -44,7 +44,7 @@
         <div class="r" id="c5-r3"><i style="background:#6b7280"></i><b>1</b><span>en blanco</span></div>
       </div>
     </div>
-    <div class="clip c5-tema" id="c5-tema" data-start="0" data-duration="5.5" data-track-index="3">
+    <div class="clip c5-tema" id="c5-tema" data-start="0" data-duration="5" data-track-index="3">
       <div class="lab mono">desglose por tema</div>
       <div class="c5-row" style="top:90px"><div class="nm">III. políticas públicas</div><div class="pc">90 %</div><div class="tr"><div class="fl" id="c5-f1"></div></div></div>
       <div class="c5-row" style="top:228px"><div class="nm">IV. derecho administrativo</div><div class="pc">85 %</div><div class="tr"><div class="fl" id="c5-f2"></div></div></div>
@@ -64,12 +64,12 @@
         tl.fromTo(id, { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 1.0 + i * 0.2);
       });
       // VO 2.2–4.2 "y el desglose por tema para ver dónde fallas"
-      tl.fromTo("#c5-tema", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.15);
-      tl.to("#c5-f1", { width: 848 * 0.9, duration: 0.6, ease: "power3.out" }, 2.5);
-      tl.to("#c5-f2", { width: 848 * 0.85, duration: 0.6, ease: "power3.out" }, 2.8);
-      tl.to("#c5-f3", { width: 848 * 0.45, duration: 0.6, ease: "power3.out" }, 3.2);
-      tl.fromTo("#c5-flag", { opacity: 0, scale: 0.6, transformOrigin: "100% 0%" }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2.5)" }, 3.6);
-      tl.to({}, { duration: 0.01 }, 4.99);
+      tl.fromTo("#c5-tema", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.9);
+      tl.to("#c5-f1", { width: 848 * 0.9, duration: 0.6, ease: "power3.out" }, 2.2);
+      tl.to("#c5-f2", { width: 848 * 0.85, duration: 0.6, ease: "power3.out" }, 2.5);
+      tl.to("#c5-f3", { width: 848 * 0.45, duration: 0.6, ease: "power3.out" }, 2.85);
+      tl.fromTo("#c5-flag", { opacity: 0, scale: 0.6, transformOrigin: "100% 0%" }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2.5)" }, 3.3);
+      tl.to({}, { duration: 0.01 }, 4.49);
       window.__timelines["05-resultado"] = tl;
     </script>
   </div>

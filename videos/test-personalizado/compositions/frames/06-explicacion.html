@@ -1,5 +1,5 @@
 <template>
-  <div id="root" data-composition-id="06-explicacion" data-start="0" data-duration="6" data-width="1080" data-height="1920">
+  <div id="root" data-composition-id="06-explicacion" data-start="0" data-duration="7" data-width="1080" data-height="1920">
     <style>
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 400; src: url("assets/fonts/PlusJakartaSans-Regular.woff2") format("woff2"); }
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
@@ -28,10 +28,10 @@
       .c6-tut .b1 { position: absolute; left: 0; top: 0; width: 640px; height: 110px; background: #FFA633; color: #16181D; display: flex; align-items: center; padding: 0 36px; box-sizing: border-box; font-weight: 800; font-size: 40px; letter-spacing: -0.02em; text-transform: lowercase; }
       .c6-tut .b2 { position: absolute; right: 0; top: 130px; width: 760px; height: 100px; border: 2px solid #FFA633; color: #FFFFFF; display: flex; align-items: center; padding: 0 30px; box-sizing: border-box; font-size: 30px; font-weight: 600; }
     </style>
-    <div class="clip c6-bg" id="c6-bg" data-start="0" data-duration="6" data-track-index="0"></div>
-    <div class="clip c6-step" id="c6-step" data-start="0" data-duration="6" data-track-index="1"><b>05</b><span>con su explicación</span></div>
-    <div class="clip c6-q" id="c6-q" data-start="0" data-duration="6" data-track-index="2"><div class="n mono">pregunta 7</div><div class="t">La excedencia forzosa da derecho a…</div></div>
-    <div class="clip c6-exp" id="c6-exp" data-start="0" data-duration="6" data-track-index="3">
+    <div class="clip c6-bg" id="c6-bg" data-start="0" data-duration="7" data-track-index="0"></div>
+    <div class="clip c6-step" id="c6-step" data-start="0" data-duration="7" data-track-index="1"><b>05</b><span>con su explicación</span></div>
+    <div class="clip c6-q" id="c6-q" data-start="0" data-duration="7" data-track-index="2"><div class="n mono">pregunta 7</div><div class="t">La excedencia forzosa da derecho a…</div></div>
+    <div class="clip c6-exp" id="c6-exp" data-start="0" data-duration="7" data-track-index="3">
       <div class="k mono"><b><svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="square"><path d="M4 12l5 5 11-11"/></svg></b>correcta: b · explicación</div>
       <div class="ok" id="c6-ok">La <em>B</em> es la correcta: la excedencia forzosa conserva el puesto y además computa la antigüedad.</div>
       <div class="rule" id="c6-rule"></div>
@@ -39,7 +39,7 @@
       <div class="no" id="c6-n2" style="top:450px"><b>C</b><span>Incompleta: olvida la reserva del puesto.</span></div>
       <div class="no" id="c6-n3" style="top:540px"><b>D</b><span>Falsa: sí da derecho a lo anterior.</span></div>
     </div>
-    <div class="clip c6-tut" id="c6-tut" data-start="0" data-duration="6" data-track-index="4">
+    <div class="clip c6-tut" id="c6-tut" data-start="0" data-duration="7" data-track-index="4">
       <div class="b1" id="c6-b1">pregúntale a tu tutor</div>
       <div class="b2" id="c6-b2">¿Y si no me queda claro algo?</div>
     </div>
@@ -57,9 +57,9 @@
         tl.fromTo(id, { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 1.8 + i * 0.3);
       });
       // VO 2.96–4.82 "¿Dudas? Pregúntale a Tu Tutor."
-      tl.fromTo("#c6-b2", { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 2.95);
-      tl.fromTo("#c6-b1", { opacity: 0, y: 30, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "back.out(2)" }, 3.5);
-      tl.to({}, { duration: 0.01 }, 5.49);
+      tl.fromTo("#c6-b2", { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 3.2);
+      tl.fromTo("#c6-b1", { opacity: 0, y: 30, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "back.out(2)" }, 4.2);
+      tl.to({}, { duration: 0.01 }, 6.49);
       window.__timelines["06-explicacion"] = tl;
     </script>
   </div>

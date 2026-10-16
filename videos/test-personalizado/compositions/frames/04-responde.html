@@ -1,5 +1,5 @@
 <template>
-  <div id="root" data-composition-id="04-responde" data-start="0" data-duration="7.1" data-width="1080" data-height="1920">
+  <div id="root" data-composition-id="04-responde" data-start="0" data-duration="7.6" data-width="1080" data-height="1920">
     <style>
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: url("assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2"); }
@@ -34,10 +34,10 @@
       .c4-map .d.a { background: #FFA633; border-color: #FFA633; color: #16181D; }
       .c4-map .d.cur { border-color: #FFFFFF; }
     </style>
-    <div class="clip c4-bg" id="c4-bg" data-start="0" data-duration="7.1" data-track-index="0"></div>
-    <div class="clip c4-step" id="c4-step" data-start="0" data-duration="7.1" data-track-index="1"><b>03</b><span>responde</span></div>
-    <div class="clip c4-timer" id="c4-timer" data-start="0" data-duration="7.1" data-track-index="2"><div class="tt mono">cronómetro · 38:12</div><div class="tr"><div class="tf" id="c4-tf"></div></div></div>
-    <div class="clip c4-card" id="c4-card" data-start="0" data-duration="7.1" data-track-index="3">
+    <div class="clip c4-bg" id="c4-bg" data-start="0" data-duration="7.6" data-track-index="0"></div>
+    <div class="clip c4-step" id="c4-step" data-start="0" data-duration="7.6" data-track-index="1"><b>03</b><span>responde</span></div>
+    <div class="clip c4-timer" id="c4-timer" data-start="0" data-duration="7.6" data-track-index="2"><div class="tt mono">cronómetro · 38:12</div><div class="tr"><div class="tf" id="c4-tf"></div></div></div>
+    <div class="clip c4-card" id="c4-card" data-start="0" data-duration="7.6" data-track-index="3">
       <div class="c4-qn mono">pregunta 7</div>
       <div class="c4-qt">La excedencia forzosa da derecho a…</div>
       <div class="c4-op" style="top:226px"><span class="l mono">A</span><span class="t">Solo la reserva del puesto</span></div>
@@ -45,12 +45,12 @@
       <div class="c4-op" style="top:438px"><span class="l mono">C</span><span class="t">Solo el cómputo de antigüedad</span></div>
       <div class="c4-op" style="top:544px"><span class="l mono">D</span><span class="t">Ninguna de las anteriores</span></div>
     </div>
-    <div class="clip c4-acts" id="c4-acts" data-start="0" data-duration="7.1" data-track-index="4">
+    <div class="clip c4-acts" id="c4-acts" data-start="0" data-duration="7.6" data-track-index="4">
       <div class="c4-act" id="c4-a1"><div class="ic">?</div><div class="lb mono">duda</div></div>
       <div class="c4-act" id="c4-a2"><div class="ic" id="c4-star">★</div><div class="lb mono">favorita</div></div>
       <div class="c4-act" id="c4-a3"><div class="ic"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="square"><path d="M12 3v13M6 11l6 6 6-6M4 21h16"/></svg></div><div class="lb mono">guardar y salir</div></div>
     </div>
-    <div class="clip c4-map" id="c4-map" data-start="0" data-duration="7.1" data-track-index="5">
+    <div class="clip c4-map" id="c4-map" data-start="0" data-duration="7.6" data-track-index="5">
       <div class="ml mono">mapa de preguntas</div>
       <div class="dots"><div class="d a">1</div><div class="d a">2</div><div class="d a">3</div><div class="d a">4</div><div class="d a">5</div><div class="d a">6</div><div class="d cur">7</div><div class="d">8</div><div class="d">9</div><div class="d">10</div></div>
     </div>
@@ -60,20 +60,20 @@
       const tl = gsap.timeline({ paused: true });
       tl.fromTo("#c4-step", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.05);
       tl.fromTo("#c4-timer", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.25);
-      tl.fromTo("#c4-tf", { width: 760 }, { width: 560, duration: 6, ease: "none" }, 0.3);
+      tl.fromTo("#c4-tf", { width: 760 }, { width: 560, duration: 6.5, ease: "none" }, 0.3);
       tl.fromTo("#c4-card", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.3);
       tl.fromTo("#c4-map", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 0.9);
       // VO 0.4–2.11 "Responde como en el examen": pick B
       tl.fromTo("#c4-hl", { opacity: 0, scaleX: 0.2, transformOrigin: "0% 50%" }, { opacity: 1, scaleX: 1, duration: 0.3, ease: "power3.out" }, 1.4);
       tl.to("#c4-bl, #c4-bt", { color: "#16181D", duration: 0.2, ease: "none" }, 1.45);
       // VO 2.56–5.8: duda → favorita → guardar y salir
-      tl.fromTo("#c4-a1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.6);
-      tl.fromTo("#c4-dbt", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "none" }, 2.9);
-      tl.fromTo("#c4-a2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.6);
-      tl.to("#c4-star", { backgroundColor: "#FFA633", color: "#16181D", scale: 1.15, duration: 0.25, ease: "back.out(3)" }, 3.95);
-      tl.to("#c4-star", { scale: 1, duration: 0.2, ease: "power2.inOut" }, 4.2);
-      tl.fromTo("#c4-a3", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.75);
-      tl.to({}, { duration: 0.01 }, 6.49);
+      tl.fromTo("#c4-a1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.75);
+      tl.fromTo("#c4-dbt", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "none" }, 3.0);
+      tl.fromTo("#c4-a2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.85);
+      tl.to("#c4-star", { backgroundColor: "#FFA633", color: "#16181D", scale: 1.15, duration: 0.25, ease: "back.out(3)" }, 4.1);
+      tl.to("#c4-star", { scale: 1, duration: 0.2, ease: "power2.inOut" }, 4.35);
+      tl.fromTo("#c4-a3", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 5.2);
+      tl.to({}, { duration: 0.01 }, 6.99);
       window.__timelines["04-responde"] = tl;
     </script>
   </div>
