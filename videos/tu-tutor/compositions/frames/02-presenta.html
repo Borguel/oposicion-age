@@ -1,0 +1,44 @@
+<template>
+  <div id="root" data-composition-id="02-presenta" data-start="0" data-duration="8" data-width="1080" data-height="1920">
+    <style>
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 400; src: url("assets/fonts/PlusJakartaSans-Regular.woff2") format("woff2"); }
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: url("assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2"); }
+      @font-face { font-family: "IBM Plex Mono"; font-weight: 600; src: url("assets/fonts/IBMPlexMono-SemiBold.woff2") format("woff2"); }
+      #root { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; font-family: "Plus Jakarta Sans", Arial, sans-serif; color: #16181D; }
+      #root .clip { position: absolute; }
+      .mono { font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+      .bg { left: 0; top: 0; width: 1080px; height: 1920px; background: #FFA633; }
+      .logo { left: 76px; top: 170px; width: 150px; height: 151px; }
+      .tit { left: 70px; top: 380px; width: 940px; font-weight: 800; font-size: 300px; line-height: 0.84; letter-spacing: -0.06em; text-transform: lowercase; color: #16181D; }
+      .tit span { display: block; overflow: hidden; padding-bottom: 14px; }
+      .tit span i { display: block; font-style: normal; }
+      .tag { left: 76px; top: 990px; font-size: 32px; color: rgba(22,24,29,0.75); }
+      .pill { left: 76px; width: 928px; height: 120px; background: #16181D; color: #FFFFFF; display: flex; align-items: center; padding: 0 44px; box-sizing: border-box; font-weight: 800; font-size: 52px; letter-spacing: -0.02em; text-transform: lowercase; }
+      .pill em { font-style: normal; color: #FFA633; margin-right: 22px; font-family: "IBM Plex Mono", monospace; font-size: 34px; }
+      #p1 { top: 1120px; } #p2 { top: 1270px; } #p3 { top: 1420px; }
+    </style>
+    <div class="clip bg" id="bg" data-start="0" data-duration="8" data-track-index="0"></div>
+    <div class="clip logo" id="logo" data-start="0" data-duration="8" data-track-index="1"><img src="assets/logo-brand-favicon.svg" alt="" style="width:150px;height:151px;display:block"></div>
+    <div class="clip tit" id="tit" data-start="0" data-duration="8" data-track-index="2"><span><i id="t1">tu</i></span><span><i id="t2">tutor</i></span></div>
+    <div class="clip tag mono" id="tag" data-start="0" data-duration="8" data-track-index="3">aquí para ayudarte</div>
+    <div class="clip pill" id="p1" data-start="0" data-duration="8" data-track-index="4"><em>01</em>profesor particular</div>
+    <div class="clip pill" id="p2" data-start="0" data-duration="8" data-track-index="5"><em>02</em>con inteligencia artificial</div>
+    <div class="clip pill" id="p3" data-start="0" data-duration="8" data-track-index="6"><em>03</em>disponible a cualquier hora</div>
+
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#logo", { opacity: 0, scale: 0.4, rotation: -14 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.8)" }, 0.1);
+      tl.fromTo("#t1", { yPercent: 105 }, { yPercent: 0, duration: 0.55, ease: "power4.out" }, 0.4);
+      tl.fromTo("#t2", { yPercent: 105 }, { yPercent: 0, duration: 0.55, ease: "power4.out" }, 0.65);
+      tl.fromTo("#tag", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "none" }, 1.5);
+      [["#p1", 2.4], ["#p2", 3.7], ["#p3", 5.4]].forEach(function (a) {
+        tl.fromTo(a[0], { opacity: 0, x: 120 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, a[1]);
+      });
+      tl.to({}, { duration: 0.01 }, 7.49);
+      window.__timelines["02-presenta"] = tl;
+    </script>
+  </div>
+</template>

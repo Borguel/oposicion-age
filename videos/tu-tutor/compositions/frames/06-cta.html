@@ -1,0 +1,54 @@
+<template>
+  <div id="root" data-composition-id="06-cta" data-start="0" data-duration="7" data-width="1080" data-height="1920">
+    <style>
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 400; src: url("assets/fonts/PlusJakartaSans-Regular.woff2") format("woff2"); }
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: url("assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2"); }
+      @font-face { font-family: "IBM Plex Mono"; font-weight: 600; src: url("assets/fonts/IBMPlexMono-SemiBold.woff2") format("woff2"); }
+      #root { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; font-family: "Plus Jakarta Sans", Arial, sans-serif; color: #FFFFFF; }
+      #root .clip { position: absolute; }
+      .mono { font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+      .bg { left: 0; top: 0; width: 1080px; height: 1920px; background: #16181D; }
+      #root .bg, #root .fade { left: 0; top: 0; width: 1080px; height: 1920px; }
+      .fade { background: #000; opacity: 0; }
+      .logo { left: 400px; top: 200px; width: 280px; height: 282px; }
+      .w { left: 76px; top: 540px; width: 928px; text-align: center; font-weight: 800; font-size: 200px; line-height: 0.88; letter-spacing: -0.06em; text-transform: lowercase; }
+      .w em { font-style: normal; color: #FFA633; }
+      .sub { left: 76px; top: 960px; width: 928px; text-align: center; font-size: 32px; color: #FFA633; }
+      .free { left: 76px; top: 1030px; width: 928px; text-align: center; font-weight: 800; font-size: 56px; letter-spacing: -0.02em; text-transform: lowercase; }
+      .chips { left: 76px; top: 1140px; width: 928px; display: flex; justify-content: center; gap: 16px; font-size: 30px; }
+      .ch { border: 2px solid #FFA633; color: #FFA633; padding: 12px 26px; }
+      .pr { left: 76px; top: 1290px; width: 928px; display: flex; justify-content: center; }
+      .pill { background: #FFA633; color: #16181D; font-weight: 800; font-size: 76px; letter-spacing: -0.03em; padding: 30px 56px; white-space: nowrap; }
+      .c { display: inline-block; opacity: 0; }
+    </style>
+    <div class="clip bg" id="bg" data-start="0" data-duration="7" data-track-index="0"></div>
+    <div class="clip logo" id="logo" data-start="0" data-duration="7" data-track-index="1"><img src="assets/logo-brand-favicon.svg" alt="" style="width:280px;height:282px;display:block"></div>
+    <div class="clip w" id="w" data-start="0" data-duration="7" data-track-index="2"><span id="w1">tu</span> <em id="w2">tutor</em></div>
+    <div class="clip sub mono" id="sub" data-start="0" data-duration="7" data-track-index="3">incluido en el plan premium</div>
+    <div class="clip free" id="free" data-start="0" data-duration="7" data-track-index="4">7 días gratis · sin tarjeta</div>
+    <div class="clip chips mono" id="chips" data-start="0" data-duration="7" data-track-index="5"><span class="ch" id="k1">GACE</span><span class="ch" id="k2">AGE</span><span class="ch" id="k3">AUXILIAR</span></div>
+    <div class="clip pr" id="pr" data-start="0" data-duration="7" data-track-index="6"><div class="pill" id="pill"></div></div>
+    <div class="clip fade" id="fade" data-start="0" data-duration="7" data-track-index="7"></div>
+
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      var pill = document.getElementById("pill"), url = "dominatuopo.com";
+      for (var i = 0; i < url.length; i++) { var s = document.createElement("span"); s.className = "c"; s.textContent = url[i]; pill.appendChild(s); }
+      tl.fromTo("#logo", { scale: 0.2, rotation: -12, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.7, ease: "back.out(1.8)" }, 0.1);
+      // VO 0.4–2.6 "Tu Tutor, incluido en el plan Premium."
+      tl.fromTo(["#w1", "#w2"], { scale: 1.6, y: -40, opacity: 0 }, { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: "power4.out", stagger: 0.25 }, 0.45);
+      tl.fromTo("#sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.6);
+      // VO 3.05–6.29 "Pruébalo siete días gratis, en dominatuopo punto com."
+      tl.fromTo("#free", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.1);
+      ["#k1", "#k2", "#k3"].forEach(function (id, i) { tl.fromTo(id, { opacity: 0, y: 20, scale: 0.85 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "back.out(2)" }, 3.5 + i * 0.12); });
+      tl.fromTo("#pill", { opacity: 0, scaleX: 0.6 }, { opacity: 1, scaleX: 1, duration: 0.35, ease: "back.out(1.6)" }, 4.1);
+      tl.fromTo(".c", { opacity: 0 }, { opacity: 1, duration: 0.01, ease: "none", stagger: 0.06 }, 4.9);
+      tl.fromTo("#fade", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "none" }, 6.7);
+      tl.to({}, { duration: 0.01 }, 6.99);
+      window.__timelines["06-cta"] = tl;
+    </script>
+  </div>
+</template>
