@@ -1,5 +1,5 @@
 <template>
-  <div id="root" data-composition-id="05-memoria" data-start="0" data-duration="5.5" data-width="1080" data-height="1920">
+  <div id="root" data-composition-id="05-memoria" data-start="0" data-duration="5" data-width="1080" data-height="1920">
     <style>
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 400; src: url("assets/fonts/PlusJakartaSans-Regular.woff2") format("woff2"); }
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
@@ -23,11 +23,11 @@
       .nw { position: absolute; left: 40px; top: 640px; width: 848px; height: 80px; border: 2px dashed #504D48; display: flex; align-items: center; padding: 0 28px; box-sizing: border-box; font-size: 26px; color: rgba(255,255,255,0.7); }
       .bub { left: 76px; top: 1420px; width: 928px; font-weight: 800; font-size: 54px; letter-spacing: -0.03em; text-transform: lowercase; }
     </style>
-    <div class="clip bg" id="bg" data-start="0" data-duration="5.5" data-track-index="0"></div>
-    <div class="clip k mono" id="k" data-start="0" data-duration="5.5" data-track-index="1"><i></i>tu tutor</div>
-    <div class="clip h" id="h" data-start="0" data-duration="5.5" data-track-index="2">tiene<br>memoria.</div>
-    <div class="clip hist" id="hist" data-start="0" data-duration="5.5" data-track-index="3"><div class="t mono">historial de conversaciones</div><div class="it" id="i1"><div class="d mono">hoy</div><div class="q">¿Puedes explicarme esta pregunta?</div></div><div class="it" id="i2"><div class="d mono">ayer</div><div class="q">Estructura del examen</div></div><div class="it" id="i3"><div class="hl" id="hl"></div><div class="d mono">hace 2 semanas</div><div class="q">Explícame el Título Preliminar</div><div class="go mono" id="go">continuar →</div></div><div class="nw mono">+ nueva conversación</div></div>
-    <div class="clip bub" id="bub" data-start="0" data-duration="5.5" data-track-index="4">vuelve mañana y sigue donde lo dejaste.</div>
+    <div class="clip bg" id="bg" data-start="0" data-duration="5" data-track-index="0"></div>
+    <div class="clip k mono" id="k" data-start="0" data-duration="5" data-track-index="1"><i></i>tu tutor</div>
+    <div class="clip h" id="h" data-start="0" data-duration="5" data-track-index="2">tiene<br>memoria.</div>
+    <div class="clip hist" id="hist" data-start="0" data-duration="5" data-track-index="3"><div class="t mono">historial de conversaciones</div><div class="it" id="i1"><div class="d mono">hoy</div><div class="q">¿Puedes explicarme esta pregunta?</div></div><div class="it" id="i2"><div class="d mono">ayer</div><div class="q">Estructura del examen</div></div><div class="it" id="i3"><div class="hl" id="hl"></div><div class="d mono">hace 2 semanas</div><div class="q">Explícame el Título Preliminar</div><div class="go mono" id="go">continuar →</div></div><div class="nw mono">+ nueva conversación</div></div>
+    <div class="clip bub" id="bub" data-start="0" data-duration="5" data-track-index="4">vuelve mañana y sigue donde lo dejaste.</div>
 
     <script src="assets/vendor/gsap.min.js"></script>
     <script>
@@ -38,10 +38,10 @@
       tl.fromTo("#hist", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.9);
       ["#i1", "#i2", "#i3"].forEach(function (id, i) { tl.fromTo(id, { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 1.1 + i * 0.25); });
       // VO 1.9–4.24 "Vuelve mañana, y sigue donde lo dejaste."
-      tl.fromTo("#hl", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 2.7);
-      tl.fromTo("#go", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" }, 3.1);
-      tl.fromTo("#bub", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.1);
-      tl.to({}, { duration: 0.01 }, 4.99);
+      tl.fromTo("#hl", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 2.3);
+      tl.fromTo("#go", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" }, 2.9);
+      tl.fromTo("#bub", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.6);
+      tl.to({}, { duration: 0.01 }, 4.49);
       window.__timelines["05-memoria"] = tl;
     </script>
   </div>

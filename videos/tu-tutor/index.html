@@ -37,7 +37,7 @@
       id="root"
       data-composition-id="main"
       data-start="0"
-      data-duration="43"
+      data-duration="43.5"
       data-width="1080"
       data-height="1920"
     >
@@ -65,14 +65,14 @@
         data-composition-id="02-presenta"
         data-composition-src="compositions/frames/02-presenta.html"
         data-start="6.5"
-        data-duration="8"
+        data-duration="7.5"
         data-track-index="1"
       ></div>
       <audio
         id="el-02-presenta-voice"
         src="assets/voice/voice_02.wav"
         data-start="6.5"
-        data-duration="7.5"
+        data-duration="7"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -82,15 +82,15 @@
         class="scene"
         data-composition-id="03-chat"
         data-composition-src="compositions/frames/03-chat.html"
-        data-start="14"
-        data-duration="9.4"
+        data-start="13.5"
+        data-duration="10.9"
         data-track-index="0"
       ></div>
       <audio
         id="el-03-chat-voice"
         src="assets/voice/voice_03.wav"
-        data-start="14"
-        data-duration="9"
+        data-start="13.5"
+        data-duration="10.5"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -100,15 +100,15 @@
         class="scene"
         data-composition-id="04-contexto"
         data-composition-src="compositions/frames/04-contexto.html"
-        data-start="23"
-        data-duration="8.6"
+        data-start="24"
+        data-duration="8.1"
         data-track-index="1"
       ></div>
       <audio
         id="el-04-contexto-voice"
         src="assets/voice/voice_04.wav"
-        data-start="23"
-        data-duration="8"
+        data-start="24"
+        data-duration="7.5"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -118,15 +118,15 @@
         class="scene"
         data-composition-id="05-memoria"
         data-composition-src="compositions/frames/05-memoria.html"
-        data-start="31"
-        data-duration="5.5"
+        data-start="31.5"
+        data-duration="5"
         data-track-index="0"
       ></div>
       <audio
         id="el-05-memoria-voice"
         src="assets/voice/voice_05.wav"
-        data-start="31"
-        data-duration="5"
+        data-start="31.5"
+        data-duration="4.5"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -137,14 +137,14 @@
         data-composition-id="06-cta"
         data-composition-src="compositions/frames/06-cta.html"
         data-start="36"
-        data-duration="7"
+        data-duration="7.5"
         data-track-index="1"
       ></div>
       <audio
         id="el-06-cta-voice"
         src="assets/voice/voice_06.wav"
         data-start="36"
-        data-duration="7"
+        data-duration="7.5"
         data-track-index="10"
         data-volume="1"
       ></audio>
@@ -154,7 +154,7 @@
         id="el-bgm"
         src="assets/bgm/bgm.mp3"
         data-start="0"
-        data-duration="43"
+        data-duration="43.5"
         data-track-index="11"
         data-volume="0.2"
       ></audio>
@@ -168,15 +168,15 @@
       (function () { var tl = window.__timelines["main"];
         tl.to("#el-01-hook", { scale: 2.5, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power3.in" }, 6.5);
         tl.fromTo("#el-02-presenta", { scale: 0.5, opacity: 0, filter: "blur(8px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 6.5);
-        tl.to("#el-02-presenta", { x: -1080, duration: 0.5, ease: "power3.inOut" }, 14);
-        tl.fromTo("#el-03-chat", { x: 1080, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 14);
-        tl.to("#el-03-chat", { scaleX: 0, transformOrigin: "left center", duration: 0.4, ease: "power3.inOut" }, 23);
-        tl.fromTo("#el-04-contexto", { scaleX: 0, transformOrigin: "right center", opacity: 1 }, { scaleX: 1, transformOrigin: "right center", opacity: 1, duration: 0.4, ease: "power3.inOut" }, 23);
-        tl.to("#el-04-contexto", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 31);
-        tl.fromTo("#el-05-memoria", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" }, 31);
+        tl.to("#el-02-presenta", { x: -1080, duration: 0.5, ease: "power3.inOut" }, 13.5);
+        tl.fromTo("#el-03-chat", { x: 1080, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 13.5);
+        tl.to("#el-03-chat", { scaleX: 0, transformOrigin: "left center", duration: 0.4, ease: "power3.inOut" }, 24);
+        tl.fromTo("#el-04-contexto", { scaleX: 0, transformOrigin: "right center", opacity: 1 }, { scaleX: 1, transformOrigin: "right center", opacity: 1, duration: 0.4, ease: "power3.inOut" }, 24);
+        tl.to("#el-04-contexto", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 31.5);
+        tl.fromTo("#el-05-memoria", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" }, 31.5);
         tl.to("#el-05-memoria", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 36);
         tl.fromTo("#el-06-cta", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 36);
-        tl.to({}, { duration: 43 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
+        tl.to({}, { duration: 43.5 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
       })();
     </script>
   </body>

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "historyId": "69a5aeb5-255c-4cce-a044-572fa19937a4",
-  "currentRevision": "6996ab80-10d3-4b42-a947-6adb0595d84e",
+  "currentRevision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
   "pendingChanges": false,
   "files": {
     "AGENTS.md": {
@@ -17,12 +17,12 @@
       "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/1d/1d4f0c8ca2507b94fd7c9df709fff01416adbd51a0f922b9d6ed2f40129147d5"
     },
     "STORYBOARD.md": {
-      "hash": "07b3405a92942ee61441502ccf92985ed9efa69ed14a71083249f61db4caf415",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/07/07b3405a92942ee61441502ccf92985ed9efa69ed14a71083249f61db4caf415"
+      "hash": "5eeb07b12349ad8708acaeecd86291711df6b625dd0c36251c5dbdaa8ec590af",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/5e/5eeb07b12349ad8708acaeecd86291711df6b625dd0c36251c5dbdaa8ec590af"
     },
     "assets/bgm/bgm.mp3": {
-      "hash": "5dad4e287c2e9ef3c4b6e4d6f9f57c7797e510ce2d6b45f9841331ec8a47df58",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/5d/5dad4e287c2e9ef3c4b6e4d6f9f57c7797e510ce2d6b45f9841331ec8a47df58"
+      "hash": "4410e245e0cd203a9ce161da322b2772db7211fa352c5277715bd2bda416d1e2",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/44/4410e245e0cd203a9ce161da322b2772db7211fa352c5277715bd2bda416d1e2"
     },
     "assets/fonts/IBMPlexMono-600.woff2": {
       "hash": "0d1f0b8d0722224e32e9f28261bdc86c79115be73444ae5eceb73976a1bcdf83",
@@ -69,28 +69,28 @@
       "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/c1/c174bfce53a729418d57a8ad8625e7247c793a22fef8e2851e3cfa3de9cd8280"
     },
     "assets/voice/voice_01.wav": {
-      "hash": "bca6f6b21362b2ea91176a49ce16c73cab7cf63375dfb48b895a4ae31b163bcd",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/bc/bca6f6b21362b2ea91176a49ce16c73cab7cf63375dfb48b895a4ae31b163bcd"
+      "hash": "c9a0cdb3d03565442e0574cdcdb181287598d5f0abec2df28b24e86deadd08c6",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/c9/c9a0cdb3d03565442e0574cdcdb181287598d5f0abec2df28b24e86deadd08c6"
     },
     "assets/voice/voice_02.wav": {
-      "hash": "7158b96f40bffaeefed97c6d53b5e4d6736d7553060de57f8ef5c86c8aff421e",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/71/7158b96f40bffaeefed97c6d53b5e4d6736d7553060de57f8ef5c86c8aff421e"
+      "hash": "ea8b7aeabef845a91fdd2e143d1e111b3b9475c9f6c5c256e31f82dd00cad6b3",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/ea/ea8b7aeabef845a91fdd2e143d1e111b3b9475c9f6c5c256e31f82dd00cad6b3"
     },
     "assets/voice/voice_03.wav": {
-      "hash": "77a05de716dd6d891c21478fc2394abf2f1eb2f102e66949eb299b2d777841d2",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/77/77a05de716dd6d891c21478fc2394abf2f1eb2f102e66949eb299b2d777841d2"
+      "hash": "d9c0fa3dfa827ea50a6f22d7b98d00b303a359b8bb41ee850406653ceac5d644",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/d9/d9c0fa3dfa827ea50a6f22d7b98d00b303a359b8bb41ee850406653ceac5d644"
     },
     "assets/voice/voice_04.wav": {
-      "hash": "f120ac3b1b4be9cdad4fb6afe3df04eeb11aba5d627c1838eb8e94f7c3a57b17",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/f1/f120ac3b1b4be9cdad4fb6afe3df04eeb11aba5d627c1838eb8e94f7c3a57b17"
+      "hash": "8f55af54280eec4d46792b846b0f4f07dfa3939d01f68c14db8d9979d46b7b85",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/8f/8f55af54280eec4d46792b846b0f4f07dfa3939d01f68c14db8d9979d46b7b85"
     },
     "assets/voice/voice_05.wav": {
-      "hash": "c1b01ae3e6bd7500a136565f78511531cae9a3f28bfab4936938e08b20105f71",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/c1/c1b01ae3e6bd7500a136565f78511531cae9a3f28bfab4936938e08b20105f71"
+      "hash": "935df1c06fab471e98354201f3048334d8f6996bac247e7ce441129015d39be4",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/93/935df1c06fab471e98354201f3048334d8f6996bac247e7ce441129015d39be4"
     },
     "assets/voice/voice_06.wav": {
-      "hash": "449f273e4530eec6fddd0d118a1d173a55909dd8dd99d89d0819ba7c84b0a5f2",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/44/449f273e4530eec6fddd0d118a1d173a55909dd8dd99d89d0819ba7c84b0a5f2"
+      "hash": "43113de608e3aea3945d28a29315feb1e6f200373805861febbdced279a54b86",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/43/43113de608e3aea3945d28a29315feb1e6f200373805861febbdced279a54b86"
     },
     "audio_meta.json": {
       "hash": "85458e15bfa13dc1f7771eceade01d2a50020964d58b325ec95a145a8f313c16",
@@ -117,24 +117,24 @@
       "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/85/85cdd89c41426a05a94f11662a592c5cf48773d06a7b41e6eb98b84e84597703"
     },
     "compositions/frames/02-presenta.html": {
-      "hash": "958642d2a0f7de9419d082d9ffd36347c2c9c6575e700f8f7384dc322d6ad928",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/95/958642d2a0f7de9419d082d9ffd36347c2c9c6575e700f8f7384dc322d6ad928"
+      "hash": "a7792cc4229f12c4e26c66fdc6184fa191a8d3b319dd3254323d12040d0c52c0",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/a7/a7792cc4229f12c4e26c66fdc6184fa191a8d3b319dd3254323d12040d0c52c0"
     },
     "compositions/frames/03-chat.html": {
-      "hash": "6f1bca4399ff33c70511804e6aed9477a88ae6436bb7ba3eda39d01bcbc4621c",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/6f/6f1bca4399ff33c70511804e6aed9477a88ae6436bb7ba3eda39d01bcbc4621c"
+      "hash": "9496c00ee9414e74c7a3c31228a57897ae2ba0b6d4dc7d18a513eebdd2fab1d1",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/94/9496c00ee9414e74c7a3c31228a57897ae2ba0b6d4dc7d18a513eebdd2fab1d1"
     },
     "compositions/frames/04-contexto.html": {
-      "hash": "023a9868272c480c724feb8f03173c6ab50a44e3b0e536c740b968d75a22dc9b",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/02/023a9868272c480c724feb8f03173c6ab50a44e3b0e536c740b968d75a22dc9b"
+      "hash": "0c1bdf2932559b081209f4f691adc6b7838e6aab5347cd60b5dedf95a60a92ef",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/0c/0c1bdf2932559b081209f4f691adc6b7838e6aab5347cd60b5dedf95a60a92ef"
     },
     "compositions/frames/05-memoria.html": {
-      "hash": "903be0c8390a0fcb187e41cd377a65ce204f62c07d9400c113fef92e5f108223",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/90/903be0c8390a0fcb187e41cd377a65ce204f62c07d9400c113fef92e5f108223"
+      "hash": "2e46e3d53a520deed8a8aacd5937a5423643f816aa056627189dfba4c4d611cc",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/2e/2e46e3d53a520deed8a8aacd5937a5423643f816aa056627189dfba4c4d611cc"
     },
     "compositions/frames/06-cta.html": {
-      "hash": "d1bd64e3adc1e73b0b8061b5623014b2c028e2436e801604f9751c699bfc7069",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/d1/d1bd64e3adc1e73b0b8061b5623014b2c028e2436e801604f9751c699bfc7069"
+      "hash": "f0a7056794a455a718c5ca00f65f70be0625272f2a41bd024b28db5eb982cf39",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/f0/f0a7056794a455a718c5ca00f65f70be0625272f2a41bd024b28db5eb982cf39"
     },
     "frame.md": {
       "hash": "7bd75fc781318b9819f70f5ef88dee1e74c8a7b3044e2f2dcb6b6ff004eae60b",
@@ -145,16 +145,16 @@
       "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/44/44d4e8dcefebce0a13f5afa82aa270b0b19a1d3f82e434f92616010cee775dc4"
     },
     "index.html": {
-      "hash": "f8fccb8e823e939acbe38e53cbaa691ee78553f2090efaed2093e92fb184c474",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/f8/f8fccb8e823e939acbe38e53cbaa691ee78553f2090efaed2093e92fb184c474"
+      "hash": "a1d0e4ac4df31d60706313f40815a9e17f22b0a1596122cf6d148f4214b22510",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/a1/a1d0e4ac4df31d60706313f40815a9e17f22b0a1596122cf6d148f4214b22510"
     },
     "meta.json": {
       "hash": "22a10fe4e11cab8d8cf5897b0002f5ee143ccb7f804921017919953bed1a61f2",
       "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/22/22a10fe4e11cab8d8cf5897b0002f5ee143ccb7f804921017919953bed1a61f2"
     },
     "music/generate_bgm.py": {
-      "hash": "9ede55f4f0cd2b934892034a5a5c9129d804aa59117084e090dd71af79ee0e68",
-      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/9e/9ede55f4f0cd2b934892034a5a5c9129d804aa59117084e090dd71af79ee0e68"
+      "hash": "3dd8f2a7a9e9a6959e9b47e74afff7c8f5a7dbcf3c23cebc644b67c17be8f173",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/3d/3dd8f2a7a9e9a6959e9b47e74afff7c8f5a7dbcf3c23cebc644b67c17be8f173"
     },
     "package.json": {
       "hash": "0b6022ff364bb94ba1b1c8f53ee6ecc937bae017ad71bad3104ba2113cd51cc4",
@@ -163,6 +163,10 @@
     "voice_script.json": {
       "hash": "6f634c6bfa4d594fc52c1109709a82e2c4b2545406cea11b7674e8e928229903",
       "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/6f/6f634c6bfa4d594fc52c1109709a82e2c4b2545406cea11b7674e8e928229903"
+    },
+    "guion-locucion.md": {
+      "hash": "ee6eda2f99fb9385a69442adb4e2fe79c336158d366c40561a2878fb67c21de6",
+      "content": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/ee/ee6eda2f99fb9385a69442adb4e2fe79c336158d366c40561a2878fb67c21de6"
     }
   },
   "revisions": {
@@ -195,12 +199,87 @@
           "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/6f/6f1bca4399ff33c70511804e6aed9477a88ae6436bb7ba3eda39d01bcbc4621c"
         }
       }
+    },
+    "2c7ccf5f-7215-4cf1-8456-d420d85d2b39": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1792266779916,
+      "endedAt": 1792266779984,
+      "files": {
+        "assets/bgm/bgm.mp3": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/5d/5dad4e287c2e9ef3c4b6e4d6f9f57c7797e510ce2d6b45f9841331ec8a47df58",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/44/4410e245e0cd203a9ce161da322b2772db7211fa352c5277715bd2bda416d1e2"
+        },
+        "assets/voice/voice_01.wav": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/bc/bca6f6b21362b2ea91176a49ce16c73cab7cf63375dfb48b895a4ae31b163bcd",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/c9/c9a0cdb3d03565442e0574cdcdb181287598d5f0abec2df28b24e86deadd08c6"
+        },
+        "assets/voice/voice_02.wav": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/71/7158b96f40bffaeefed97c6d53b5e4d6736d7553060de57f8ef5c86c8aff421e",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/ea/ea8b7aeabef845a91fdd2e143d1e111b3b9475c9f6c5c256e31f82dd00cad6b3"
+        },
+        "assets/voice/voice_03.wav": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/77/77a05de716dd6d891c21478fc2394abf2f1eb2f102e66949eb299b2d777841d2",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/d9/d9c0fa3dfa827ea50a6f22d7b98d00b303a359b8bb41ee850406653ceac5d644"
+        },
+        "assets/voice/voice_04.wav": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/f1/f120ac3b1b4be9cdad4fb6afe3df04eeb11aba5d627c1838eb8e94f7c3a57b17",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/8f/8f55af54280eec4d46792b846b0f4f07dfa3939d01f68c14db8d9979d46b7b85"
+        },
+        "assets/voice/voice_05.wav": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/c1/c1b01ae3e6bd7500a136565f78511531cae9a3f28bfab4936938e08b20105f71",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/93/935df1c06fab471e98354201f3048334d8f6996bac247e7ce441129015d39be4"
+        },
+        "assets/voice/voice_06.wav": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/44/449f273e4530eec6fddd0d118a1d173a55909dd8dd99d89d0819ba7c84b0a5f2",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/43/43113de608e3aea3945d28a29315feb1e6f200373805861febbdced279a54b86"
+        },
+        "compositions/frames/02-presenta.html": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/95/958642d2a0f7de9419d082d9ffd36347c2c9c6575e700f8f7384dc322d6ad928",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/a7/a7792cc4229f12c4e26c66fdc6184fa191a8d3b319dd3254323d12040d0c52c0"
+        },
+        "compositions/frames/03-chat.html": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/6f/6f1bca4399ff33c70511804e6aed9477a88ae6436bb7ba3eda39d01bcbc4621c",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/94/9496c00ee9414e74c7a3c31228a57897ae2ba0b6d4dc7d18a513eebdd2fab1d1"
+        },
+        "compositions/frames/04-contexto.html": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/02/023a9868272c480c724feb8f03173c6ab50a44e3b0e536c740b968d75a22dc9b",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/0c/0c1bdf2932559b081209f4f691adc6b7838e6aab5347cd60b5dedf95a60a92ef"
+        },
+        "compositions/frames/05-memoria.html": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/90/903be0c8390a0fcb187e41cd377a65ce204f62c07d9400c113fef92e5f108223",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/2e/2e46e3d53a520deed8a8aacd5937a5423643f816aa056627189dfba4c4d611cc"
+        },
+        "compositions/frames/06-cta.html": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/d1/d1bd64e3adc1e73b0b8061b5623014b2c028e2436e801604f9751c699bfc7069",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/f0/f0a7056794a455a718c5ca00f65f70be0625272f2a41bd024b28db5eb982cf39"
+        },
+        "guion-locucion.md": {
+          "before": null,
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/ee/ee6eda2f99fb9385a69442adb4e2fe79c336158d366c40561a2878fb67c21de6"
+        },
+        "index.html": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/f8/f8fccb8e823e939acbe38e53cbaa691ee78553f2090efaed2093e92fb184c474",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/a1/a1d0e4ac4df31d60706313f40815a9e17f22b0a1596122cf6d148f4214b22510"
+        },
+        "music/generate_bgm.py": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/9e/9ede55f4f0cd2b934892034a5a5c9129d804aa59117084e090dd71af79ee0e68",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/3d/3dd8f2a7a9e9a6959e9b47e74afff7c8f5a7dbcf3c23cebc644b67c17be8f173"
+        },
+        "STORYBOARD.md": {
+          "before": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/07/07b3405a92942ee61441502ccf92985ed9efa69ed14a71083249f61db4caf415",
+          "after": "/root/.cache/hyperframes/history/69a5aeb5-255c-4cce-a044-572fa19937a4/blobs/5e/5eeb07b12349ad8708acaeecd86291711df6b625dd0c36251c5dbdaa8ec590af"
+        }
+      }
     }
   },
   "checks": {
     "latest": {
-      "revision": "6996ab80-10d3-4b42-a947-6adb0595d84e",
-      "id": "25494276-0e14-42d3-8e91-d750aaeb0603"
+      "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+      "id": "23cf28c4-98e5-4106-b1a1-4fa40aeb5e36"
     },
     "revisions": {
       "2ccecd7a-c930-48a9-830a-8123b3147fa4": [
@@ -233,11 +312,12 @@
           "cleanedAfterRender": "7b850211-1f1c-411b-881e-9f1885a35afe"
         }
       ],
-      "6996ab80-10d3-4b42-a947-6adb0595d84e": [
+      "6996ab80-10d3-4b42-a947-6adb0595d84e": [],
+      "2c7ccf5f-7215-4cf1-8456-d420d85d2b39": [
         {
-          "id": "25494276-0e14-42d3-8e91-d750aaeb0603",
+          "id": "23cf28c4-98e5-4106-b1a1-4fa40aeb5e36",
           "scope": "project",
-          "report": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/checks/25494276-0e14-42d3-8e91-d750aaeb0603.json",
+          "report": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/checks/23cf28c4-98e5-4106-b1a1-4fa40aeb5e36.json",
           "metadata": {
             "ok": true,
             "browserSkipped": false,
@@ -254,47 +334,22 @@
               "browserGpuMode": "auto"
             }
           },
-          "createdAt": 1792266166212,
-          "contentHash": "72be5ddee43006578e3d4f674c8f2081e779d01c36047083ce5921647a650914",
-          "revision": "6996ab80-10d3-4b42-a947-6adb0595d84e",
-          "inputFingerprint": "5d28886498bedae273b37ef504df3f3ce8d1b0b81938a999f95070f41ad2c9b5",
+          "createdAt": 1792266787678,
+          "contentHash": "09e17ecea906cee137113d4db0031f8b1a2f12f60eb28968c04bee60a3b11aef",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
           "inputScope": "local-project-files",
           "attribution": "recorded-revision"
         }
       ]
     },
-    "unversioned": [
-      {
-        "id": "f30a13ee-c740-4485-ac04-e9e9c8003309",
-        "scope": "project",
-        "report": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/checks/f30a13ee-c740-4485-ac04-e9e9c8003309.json",
-        "metadata": {
-          "ok": true,
-          "browserSkipped": false,
-          "options": {
-            "samples": 9,
-            "atTransitions": false,
-            "maxIssues": 80,
-            "collapseStatic": true,
-            "tolerance": 2,
-            "timeout": 3000,
-            "contrast": true,
-            "strict": false,
-            "snapshots": false,
-            "browserGpuMode": "auto"
-          }
-        },
-        "createdAt": 1792266114603,
-        "contentHash": "b9a3ba589367906d7857b55371caa5de39e5e97651d378871714720f41357446",
-        "revision": null,
-        "inputFingerprint": "97f6b76bcb9cbf6f576c8167d5fd2d7a8136c57efc988ae3551973d8bd77c542",
-        "inputScope": "local-project-files",
-        "attribution": "unversioned"
-      }
-    ]
+    "unversioned": []
   },
   "snapshots": {
-    "latest": null,
+    "latest": {
+      "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+      "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-9"
+    },
     "revisions": {
       "2ccecd7a-c930-48a9-830a-8123b3147fa4": [
         {
@@ -633,19 +688,222 @@
           "status": "cleaned",
           "cleanedAfterRender": "7b850211-1f1c-411b-881e-9f1885a35afe"
         }
+      ],
+      "2c7ccf5f-7215-4cf1-8456-d420d85d2b39": [
+        {
+          "scope": "full",
+          "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-0",
+          "image": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/snapshots/ea7da096-f9f4-4734-93e7-e818369ed812/frame-00-at-2.2s.png",
+          "time": 2.2,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792266879567,
+          "contentHash": "41a6f30c88442535f3e8ae06172afedbf6550f998f08719a1461e968268ca8e3",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-1",
+          "image": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/snapshots/ea7da096-f9f4-4734-93e7-e818369ed812/frame-01-at-10s.png",
+          "time": 10,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792266879567,
+          "contentHash": "a3c326e8c062bdbbde96dcc9ba8b8e4d26b0cc71434c5ee9c0566c78d216da9a",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-2",
+          "image": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/snapshots/ea7da096-f9f4-4734-93e7-e818369ed812/frame-02-at-16s.png",
+          "time": 16,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792266879567,
+          "contentHash": "ed7e5f0433b22961611146bd989bb8d9b5538663e96d259fe3dc2cd2121b7f9b",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-3",
+          "image": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/snapshots/ea7da096-f9f4-4734-93e7-e818369ed812/frame-03-at-20s.png",
+          "time": 20,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792266879567,
+          "contentHash": "b30465885e2cc2b8db9858fdb50e4e1ba2088984c7a3ac5eb2910d29104050d9",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-4",
+          "image": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/snapshots/ea7da096-f9f4-4734-93e7-e818369ed812/frame-04-at-22.5s.png",
+          "time": 22.5,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792266879567,
+          "contentHash": "601f12831b87e6ec3ca8c3887a1bbb3ee8110b477701df30f3a6e045b8feadcf",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-5",
+          "image": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/snapshots/ea7da096-f9f4-4734-93e7-e818369ed812/frame-05-at-27s.png",
+          "time": 27,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792266879567,
+          "contentHash": "72db881e781af1093987f99f098e63c48924fbaac43b5a69db5c541075894077",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-6",
+          "image": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/snapshots/ea7da096-f9f4-4734-93e7-e818369ed812/frame-06-at-30s.png",
+          "time": 30,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792266879567,
+          "contentHash": "8de51219b78d8435dd87f874e7b49fd74beb0cafb81dde32862e3d8768673086",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-7",
+          "image": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/snapshots/ea7da096-f9f4-4734-93e7-e818369ed812/frame-07-at-34s.png",
+          "time": 34,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792266879567,
+          "contentHash": "5c565708b1e4e55d6e658e2cde1af35dc6f87ec86817a6921184d39f5f8cb39f",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-8",
+          "image": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/snapshots/ea7da096-f9f4-4734-93e7-e818369ed812/frame-08-at-43s.png",
+          "time": 43,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792266879568,
+          "contentHash": "e6cbcd24a26659d6491e6c18713b8fbc14481dd1e8d78e498b7b26c869cc5d8e",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "5e9a2cd6-f2d0-4bf3-a57c-6f64efaf1f4d-9",
+          "image": "/home/user/oposicion-age/videos/tu-tutor/.hyperframes/artifacts/snapshots/ea7da096-f9f4-4734-93e7-e818369ed812/frame-09-at-42.195s.png",
+          "time": 42.195,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1792266879568,
+          "contentHash": "e6cbcd24a26659d6491e6c18713b8fbc14481dd1e8d78e498b7b26c869cc5d8e",
+          "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
+          "inputFingerprint": "26b569a2fd3033c80b7fb5f53c962c20777bf0282261a3f85aa42f7100ba22da",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
       ]
     },
     "unversioned": []
   },
   "renders": {
     "latest": {
-      "id": "7b850211-1f1c-411b-881e-9f1885a35afe",
-      "completedAt": 1792266243978,
+      "id": "4e373ef1-1710-466c-b640-338492c76029",
+      "completedAt": 1792266871499,
       "output": "/home/user/oposicion-age/videos/tu-tutor/renders/video.mp4",
       "status": "completed",
-      "revision": "6996ab80-10d3-4b42-a947-6adb0595d84e"
+      "revision": "2c7ccf5f-7215-4cf1-8456-d420d85d2b39"
     },
     "retainedRevisions": [
+      "2c7ccf5f-7215-4cf1-8456-d420d85d2b39",
       "6996ab80-10d3-4b42-a947-6adb0595d84e"
     ]
   },

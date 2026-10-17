@@ -1,5 +1,5 @@
 <template>
-  <div id="root" data-composition-id="06-cta" data-start="0" data-duration="7" data-width="1080" data-height="1920">
+  <div id="root" data-composition-id="06-cta" data-start="0" data-duration="7.5" data-width="1080" data-height="1920">
     <style>
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 400; src: url("assets/fonts/PlusJakartaSans-Regular.woff2") format("woff2"); }
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
@@ -22,14 +22,14 @@
       .pill { background: #FFA633; color: #16181D; font-weight: 800; font-size: 76px; letter-spacing: -0.03em; padding: 30px 56px; white-space: nowrap; }
       .c { display: inline-block; opacity: 0; }
     </style>
-    <div class="clip bg" id="bg" data-start="0" data-duration="7" data-track-index="0"></div>
-    <div class="clip logo" id="logo" data-start="0" data-duration="7" data-track-index="1"><img src="assets/logo-brand-favicon.svg" alt="" style="width:280px;height:282px;display:block"></div>
-    <div class="clip w" id="w" data-start="0" data-duration="7" data-track-index="2"><span id="w1">tu</span> <em id="w2">tutor</em></div>
-    <div class="clip sub mono" id="sub" data-start="0" data-duration="7" data-track-index="3">incluido en el plan premium</div>
-    <div class="clip free" id="free" data-start="0" data-duration="7" data-track-index="4">7 días gratis · sin tarjeta</div>
-    <div class="clip chips mono" id="chips" data-start="0" data-duration="7" data-track-index="5"><span class="ch" id="k1">GACE</span><span class="ch" id="k2">AGE</span><span class="ch" id="k3">AUXILIAR</span></div>
-    <div class="clip pr" id="pr" data-start="0" data-duration="7" data-track-index="6"><div class="pill" id="pill"></div></div>
-    <div class="clip fade" id="fade" data-start="0" data-duration="7" data-track-index="7"></div>
+    <div class="clip bg" id="bg" data-start="0" data-duration="7.5" data-track-index="0"></div>
+    <div class="clip logo" id="logo" data-start="0" data-duration="7.5" data-track-index="1"><img src="assets/logo-brand-favicon.svg" alt="" style="width:280px;height:282px;display:block"></div>
+    <div class="clip w" id="w" data-start="0" data-duration="7.5" data-track-index="2"><span id="w1">tu</span> <em id="w2">tutor</em></div>
+    <div class="clip sub mono" id="sub" data-start="0" data-duration="7.5" data-track-index="3">incluido en el plan premium</div>
+    <div class="clip free" id="free" data-start="0" data-duration="7.5" data-track-index="4">7 días gratis · sin tarjeta</div>
+    <div class="clip chips mono" id="chips" data-start="0" data-duration="7.5" data-track-index="5"><span class="ch" id="k1">GACE</span><span class="ch" id="k2">AGE</span><span class="ch" id="k3">AUXILIAR</span></div>
+    <div class="clip pr" id="pr" data-start="0" data-duration="7.5" data-track-index="6"><div class="pill" id="pill"></div></div>
+    <div class="clip fade" id="fade" data-start="0" data-duration="7.5" data-track-index="7"></div>
 
     <script src="assets/vendor/gsap.min.js"></script>
     <script>
@@ -40,14 +40,14 @@
       tl.fromTo("#logo", { scale: 0.2, rotation: -12, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.7, ease: "back.out(1.8)" }, 0.1);
       // VO 0.4–2.6 "Tu Tutor, incluido en el plan Premium."
       tl.fromTo(["#w1", "#w2"], { scale: 1.6, y: -40, opacity: 0 }, { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: "power4.out", stagger: 0.25 }, 0.45);
-      tl.fromTo("#sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.6);
+      tl.fromTo("#sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.4);
       // VO 3.05–6.29 "Pruébalo siete días gratis, en dominatuopo punto com."
-      tl.fromTo("#free", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.1);
-      ["#k1", "#k2", "#k3"].forEach(function (id, i) { tl.fromTo(id, { opacity: 0, y: 20, scale: 0.85 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "back.out(2)" }, 3.5 + i * 0.12); });
-      tl.fromTo("#pill", { opacity: 0, scaleX: 0.6 }, { opacity: 1, scaleX: 1, duration: 0.35, ease: "back.out(1.6)" }, 4.1);
-      tl.fromTo(".c", { opacity: 0 }, { opacity: 1, duration: 0.01, ease: "none", stagger: 0.06 }, 4.9);
-      tl.fromTo("#fade", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "none" }, 6.7);
-      tl.to({}, { duration: 0.01 }, 6.99);
+      tl.fromTo("#free", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.2);
+      ["#k1", "#k2", "#k3"].forEach(function (id, i) { tl.fromTo(id, { opacity: 0, y: 20, scale: 0.85 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "back.out(2)" }, 3.9 + i * 0.12); });
+      tl.fromTo("#pill", { opacity: 0, scaleX: 0.6 }, { opacity: 1, scaleX: 1, duration: 0.35, ease: "back.out(1.6)" }, 4.6);
+      tl.fromTo(".c", { opacity: 0 }, { opacity: 1, duration: 0.01, ease: "none", stagger: 0.06 }, 5.0);
+      tl.fromTo("#fade", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "none" }, 7.2);
+      tl.to({}, { duration: 0.01 }, 7.49);
       window.__timelines["06-cta"] = tl;
     </script>
   </div>
