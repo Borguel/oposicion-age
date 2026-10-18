@@ -4,6 +4,7 @@ Cubre lo más importante de fusionarlos en uno solo: que la detección de si
 hace falta RAG (buscar contenido real del temario) o no se dispare en el
 caso correcto, y que el historial siga persistiendo en Firestore."""
 import json
+from datetime import datetime
 from unittest.mock import patch
 
 from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_inicial_usuario, crear_conversacion, _titulo_corto
@@ -83,6 +84,17 @@ def test_pregunta_generica_sobre_el_proceso_selectivo_no_activa_rag(db):
     user_prompt = mensajes_enviados[1]["content"]
     assert "Tu Tutor" in system_prompt
     assert user_prompt == "¿Qué consejos me das para no rendirme antes del examen?"
+
+
+def test_el_system_prompt_incluye_la_fecha_de_hoy_para_que_calcule_el_mismo(db):
+    # Bug real: sin esto, Tu Tutor decía no tener "confirmada" la fecha de
+    # hoy y le pedía al usuario el mes actual para calcular cuánto faltaba
+    # para su examen, en vez de restar las dos fechas que ya conoce.
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor("¿Cuánto falta para mi examen?", db=db, usuario_id="u1", oposicion="AGE")
+    system_prompt = mock_llamada.call_args.kwargs["messages"][0]["content"]
+    assert datetime.utcnow().date().isoformat() in system_prompt
+    assert "calcula tú mismo" in system_prompt
 
 
 def test_mencionar_un_articulo_concreto_tambien_activa_rag(db):
