@@ -546,7 +546,15 @@ document.addEventListener("DOMContentLoaded", async function () {
   async function cargarHistorial() {
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
-    fetch("https://oposicion-age.onrender.com/conversaciones", { headers: authHeaders })
+    // Bug real (18/10/2026): sin ?oposicion=, el backend filtraba el
+    // listado por la oposición POR DEFECTO ("AGE", ver g.oposicion en
+    // auth_utils.py), nunca por la que el usuario tiene seleccionada en
+    // localStorage -- así que cualquier conversación guardada bajo otra
+    // oposición (GACE, Auxiliar) desaparecía del historial aunque se
+    // hubiera guardado bien.
+    const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+    const oposicion = obtenerOposicionActual();
+    fetch(`https://oposicion-age.onrender.com/conversaciones?oposicion=${encodeURIComponent(oposicion)}`, { headers: authHeaders })
       .then(res => res.json())
       .then(data => {
         conversaciones = data.conversaciones || [];

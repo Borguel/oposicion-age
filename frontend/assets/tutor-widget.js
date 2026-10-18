@@ -399,7 +399,10 @@ export function montarWidgetTutor() {
     if (!authHeaders) return;
     let conversaciones = [];
     try {
-      const res = await fetch(`${BACKEND_URL}/conversaciones`, { headers: authHeaders });
+      // Bug real (18/10/2026): sin ?oposicion=, el backend filtraba por la
+      // oposición por defecto ("AGE"), no por la seleccionada -- igual que
+      // en tu-tutor/script.js::cargarHistorial.
+      const res = await fetch(`${BACKEND_URL}/conversaciones?oposicion=${encodeURIComponent(obtenerOposicionActual())}`, { headers: authHeaders });
       if (res.ok) conversaciones = (await res.json()).conversaciones || [];
     } catch { /* se muestra el vacío de abajo */ }
 
