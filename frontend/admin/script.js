@@ -2414,44 +2414,53 @@ function _formCamposAvisoHtml(prefix, v = {}) {
   const oposicionesMarcadas = v.oposiciones || (v.oposicion ? [v.oposicion] : []);
   const checkboxesOposicion = [["AGE", "AGE"], ["GACE", "GACE"], ["AUXILIAR", "Auxiliar"]]
     .map(([val, etiqueta]) => `
-        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-right:16px;">
+        <label class="avf-checkbox">
           <input type="checkbox" class="${prefix}-oposicion" value="${val}" ${oposicionesMarcadas.includes(val) ? "checked" : ""} />
           ${etiqueta}
         </label>`).join("");
   return `
-    <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;">
-      <div>
-        <span style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Oposiciones afectadas</span>
-        ${checkboxesOposicion}
+    <div class="avf-form">
+      <div class="avf-fila avf-fila--2col">
+        <div class="avf-campo">
+          <span class="avf-etiqueta">Oposiciones afectadas</span>
+          <div class="avf-checkboxes">${checkboxesOposicion}</div>
+        </div>
+        <label class="avf-campo">
+          <span class="avf-etiqueta">Tipo</span>
+          <select id="${prefix}-tipo" class="age-input">${opcionesTipo}</select>
+        </label>
       </div>
-      <label style="font-size:13px;font-weight:600;">Tipo
-        <select id="${prefix}-tipo" class="age-input">${opcionesTipo}</select>
+      <label class="avf-campo">
+        <span class="avf-etiqueta">Texto del tipo, a mano (opcional)</span>
+        <input type="text" id="${prefix}-tipo-personalizado" class="age-input"
+               placeholder="Si ninguna opción de Tipo encaja, escribe aquí y se mostrará esto en su lugar"
+               value="${escapeHtml(v.tipo_personalizado || "")}" />
       </label>
-    </div>
-    <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;">Texto del tipo, a mano (opcional)
-      <input type="text" id="${prefix}-tipo-personalizado" class="age-input"
-             placeholder="Si ninguna opción de Tipo encaja, escribe aquí y se mostrará esto en su lugar"
-             value="${escapeHtml(v.tipo_personalizado || "")}" />
-    </label>
-    <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;">Título
-      <input type="text" id="${prefix}-titulo" class="age-input"
-             placeholder="Ej: Llamamiento extraordinario del ejercicio único (AGE)" value="${escapeHtml(v.titulo || "")}" />
-    </label>
-    <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;">Resumen (opcional)
-      <textarea id="${prefix}-resumen" class="age-input" rows="2">${escapeHtml(v.resumen || "")}</textarea>
-    </label>
-    <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;margin-top:10px;">
-      <label style="font-size:13px;font-weight:600;">Enlace a la resolución
-        <input type="url" id="${prefix}-url" class="age-input" placeholder="https://..." value="${escapeHtml(v.url_boe || "")}" />
+      <label class="avf-campo">
+        <span class="avf-etiqueta">Título</span>
+        <input type="text" id="${prefix}-titulo" class="age-input"
+               placeholder="Ej: Llamamiento extraordinario del ejercicio único (AGE)" value="${escapeHtml(v.titulo || "")}" />
       </label>
-      <label style="font-size:13px;font-weight:600;">Enlace a INAP (opcional)
-        <input type="url" id="${prefix}-url-inap" class="age-input"
-               placeholder="Si se deja vacío, se usa el genérico de procesos selectivos de INAP" value="${escapeHtml(v.url_inap || "")}" />
+      <label class="avf-campo">
+        <span class="avf-etiqueta">Resumen (opcional)</span>
+        <textarea id="${prefix}-resumen" class="age-input" rows="2">${escapeHtml(v.resumen || "")}</textarea>
       </label>
-    </div>
-    <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;max-width:220px;">Fecha (AAAAMMDD)
-      <input type="text" id="${prefix}-fecha" class="age-input" placeholder="20260715" value="${escapeHtml(v.fecha_boe || "")}" />
-    </label>`;
+      <div class="avf-fila avf-fila--2col">
+        <label class="avf-campo">
+          <span class="avf-etiqueta">Enlace a la resolución</span>
+          <input type="url" id="${prefix}-url" class="age-input" placeholder="https://..." value="${escapeHtml(v.url_boe || "")}" />
+        </label>
+        <label class="avf-campo">
+          <span class="avf-etiqueta">Enlace a INAP (opcional)</span>
+          <input type="url" id="${prefix}-url-inap" class="age-input"
+                 placeholder="Si se deja vacío, se usa el genérico de procesos selectivos de INAP" value="${escapeHtml(v.url_inap || "")}" />
+        </label>
+      </div>
+      <label class="avf-campo avf-campo-corta">
+        <span class="avf-etiqueta">Fecha (AAAAMMDD)</span>
+        <input type="text" id="${prefix}-fecha" class="age-input" placeholder="20260715" value="${escapeHtml(v.fecha_boe || "")}" />
+      </label>
+    </div>`;
 }
 
 function _leerCamposAviso(prefix) {

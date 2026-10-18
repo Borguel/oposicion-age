@@ -535,6 +535,24 @@
 .admin-op-linea { padding: 2px 0; }
 .admin-op-correcta { color: var(--age-success, #1e7e34); font-weight: 700; }
 
+/* Formulario de alta/edición de aviso oficial (Avisos oficiales -- "Añadir
+   aviso manual" y "Corregir aviso"), compartido por _formCamposAvisoHtml.
+   Antes todo en estilos inline fijos a 2 columnas sin media query: en
+   móvil los 2 campos de enlace quedaban apretados con el placeholder
+   cortado ("https://www.dominatuopo.c..."), visto en una captura real. */
+.avf-form { display: flex; flex-direction: column; gap: 16px; }
+.avf-fila { display: grid; gap: 16px; grid-template-columns: 1fr; }
+.avf-campo { display: flex; flex-direction: column; gap: 6px; }
+.avf-campo-corta { max-width: 240px; }
+.avf-etiqueta { font-size: 13.5px; font-weight: 600; color: var(--age-ink); }
+.avf-checkboxes { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.avf-checkbox { display: inline-flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 600; min-height: 44px; }
+.avf-checkbox input[type="checkbox"] { width: 19px; height: 19px; flex-shrink: 0; accent-color: var(--age-primary); }
+
+@media (min-width: 640px) {
+  .avf-fila--2col { grid-template-columns: 1fr 1fr; }
+}
+
 /* Calidad IA: reutiliza .admin-reporte* (misma tarjeta que Reportes) para
    cada auto-rechazo, más un resumen de chips arriba. */
 .admin-calidad-intro { font-size: 13.5px; color: var(--age-ink-soft, var(--age-ink)); margin: 0; }
