@@ -344,7 +344,14 @@ document.addEventListener("DOMContentLoaded", async function () {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ mensaje: texto, chat_id: chatIdActual, oposicion }),
-        signal: AbortSignal.timeout(60000)
+        // 90s, no 60s (bug real, 18/10/2026): DeepSeek tarda habitualmente
+        // 62-95s en esta llamada (ver stream-utils.js) -- con 60s el
+        // navegador cortaba la conexión antes de que el backend llegara a
+        // guardar el turno (solo guarda al final, ver _guardar_turno en
+        // chat_controller.py), así que la respuesta se veía en pantalla
+        // pero nunca quedaba en el historial. Mismo valor ya usado en
+        // subida-pdf-chat-pdf/script.js para esta misma llamada.
+        signal: AbortSignal.timeout(90000)
       });
     } catch {
       mostrarTyping(false);

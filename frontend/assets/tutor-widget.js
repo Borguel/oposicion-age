@@ -595,7 +595,9 @@ export function montarWidgetTutor() {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ mensaje: texto, chat_id: chatId, oposicion, contexto_pagina: contextoPagina }),
-        signal: AbortSignal.timeout(60000),
+        // 90s, no 60s (bug real, 18/10/2026): mismo arreglo que
+        // tu-tutor/script.js -- ver el comentario largo ahí.
+        signal: AbortSignal.timeout(90000),
       });
     } catch {
       mostrarTyping(false);
