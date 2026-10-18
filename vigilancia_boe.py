@@ -42,7 +42,7 @@ from datetime import datetime, timedelta
 
 import requests
 
-from deepseek_utils import call_deepseek_api
+from deepseek_utils import call_deepseek_api, buscar_web_deepseek
 from oposiciones import OPOSICIONES
 
 logger = logging.getLogger(__name__)
@@ -331,6 +331,159 @@ _DIAS_MAX_BACKFILL = 5
 # sin límite ni en una llamada desproporcionadamente cara.
 _MAX_CANDIDATOS_RELEVANCIA_IA_POR_CICLO = 30
 
+# detectar_avisos_inap: el BOE nunca sirve para esto (vigila su propio
+# sumario, nunca la web del INAP) -- publicaciones como listas de
+# admitidos/notas de corte de la Comisión Permanente de Selección se
+# publican solo en inap.es/run.gob.es, nunca en el BOE. Con la API de
+# Search de DeepSeek (0,75$/1000 solicitudes con éxito, ver
+# deepseek_utils.buscar_web_deepseek) una consulta fija por cuerpo, una vez
+# al día, cuesta céntimos al año -- deliberadamente NO una por usuario ni
+# una lista abierta de variantes, para que el coste se mantenga acotado y
+# previsible sin tener que montar ninguna infraestructura de facturación
+# por solicitud para un volumen tan pequeño.
+_CONSULTAS_VIGILANCIA_INAP = (
+    "INAP Comisión Permanente de Selección Cuerpo General Administrativo AGE lista admitidos nota de corte",
+    "INAP Comisión Permanente de Selección Cuerpo de Gestión GACE lista admitidos nota de corte",
+    "INAP Comisión Permanente de Selección Cuerpo General Auxiliar Administrativo lista admitidos nota de corte",
+)
+
+
+def _prompt_relevancia_inap(resultados):
+    listado = "\n".join(
+        f"{i}: TÍTULO: {r['titulo']}\n   RESUMEN: {r['snippet'][:300]}\n   URL: {r['url']}"
+        for i, r in enumerate(resultados)
+    )
+    system = (
+        "Eres un analista que vigila publicaciones de la Comisión Permanente de Selección / INAP para "
+        "una web de preparación de oposiciones a 3 cuerpos de la Administración General del Estado por "
+        "turno libre: AGE (Cuerpo General Administrativo), GACE (Cuerpo de Gestión de la Administración "
+        "Civil del Estado) y AUXILIAR (Cuerpo General Auxiliar). Te llegan resultados de una búsqueda web "
+        "(título, resumen y URL) que pueden o no ser una publicación REAL y oficial de un proceso "
+        "selectivo de estos 3 cuerpos (lista de admitidos/excluidos, nota de corte, convocatoria, fecha "
+        "de examen, relación de aprobados...).\n\n"
+        "Para cada resultado, decide si es RAZONABLE PENSAR que es de verdad una publicación oficial "
+        "nueva de ese tipo para uno de estos 3 cuerpos -- no un blog, foro, academia privada, noticia de "
+        "prensa hablando del tema de pasada, o una publicación de una convocatoria distinta/otro cuerpo. "
+        "Sé conservador: ante la duda, no lo marques como relevante. Indica también a qué cuerpo(s) -- de "
+        "AGE, GACE, AUXILIAR -- afecta, y qué tipo de publicación es (una de: \"convocatoria\", "
+        "\"lista_admitidos\", \"aprobados\", \"fecha_examen\", \"tribunal\", \"llamamiento_extraordinario\"; "
+        "si no estás seguro del tipo exacto pero sí de que es relevante, usa \"lista_admitidos\").\n\n"
+        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, con una entrada por cada resultado recibido "
+        "(mismo índice que en el enunciado), sin texto adicional:\n"
+        '{"resultados": [{"indice": 0, "relevante": true, "oposiciones": ["AGE"], "tipo": "lista_admitidos", '
+        '"motivo": "una frase breve"}]}'
+    )
+    user = f"RESULTADOS:\n{listado}"
+    return system, user
+
+
+def _clasificar_relevancia_inap_con_ia(resultados):
+    """Misma filosofía que _clasificar_relevancia_temario_con_ia: una sola
+    llamada a DeepSeek para TODOS los resultados del ciclo (nunca una por
+    resultado). Devuelve {indice: {"oposiciones": [...], "tipo": "...",
+    "motivo": "..."}} solo para los índices que la IA considera relevantes;
+    ante cualquier fallo devuelve {} -- un ciclo sin esta clasificación no
+    es peor que no tener detectar_avisos_inap en absoluto."""
+    if not resultados:
+        return {}
+    system, user = _prompt_relevancia_inap(resultados)
+    raw = call_deepseek_api(
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        temperature=0.0,
+        max_tokens=min(4000, 200 + 150 * len(resultados)),
+        response_format_json=True,
+    )
+    if not raw:
+        return {}
+    try:
+        datos = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(datos, dict):
+        return {}
+    oposiciones_validas = set(PALABRAS_CLAVE_OPOSICION.keys())
+    tipos_validos = set(_TIPO_POR_PALABRA_CLAVE.values()) | {"aprobados"}
+    salida = {}
+    for entrada in (datos.get("resultados") or []):
+        if not isinstance(entrada, dict) or entrada.get("relevante") is not True:
+            continue
+        try:
+            indice = int(entrada.get("indice"))
+        except (TypeError, ValueError):
+            continue
+        oposiciones = [o for o in (entrada.get("oposiciones") or []) if o in oposiciones_validas]
+        tipo = entrada.get("tipo") if entrada.get("tipo") in tipos_validos else "lista_admitidos"
+        salida[indice] = {
+            "oposiciones": oposiciones or list(oposiciones_validas),
+            "tipo": tipo,
+            "motivo": str(entrada.get("motivo") or "").strip()[:300],
+        }
+    return salida
+
+
+def _normalizar_url(url):
+    """Quita querystring/fragmento para deduplicar -- la misma publicación
+    puede salir en la búsqueda con parámetros de tracking distintos cada
+    vez (p. ej. ?utm_source=...)."""
+    return (url or "").split("?")[0].split("#")[0].rstrip("/")
+
+
+def detectar_avisos_inap(db):
+    """Complementa a detectar_avisos_oficiales (que SOLO vigila el sumario
+    del BOE) con una búsqueda web real de publicaciones de la Comisión
+    Permanente de Selección / INAP -- listas de admitidos, notas de corte,
+    convocatorias -- que nunca pasan por el BOE. Una consulta fija por
+    cuerpo (ver _CONSULTAS_VIGILANCIA_INAP), una vez al día (mismo cron que
+    detectar_avisos_oficiales, ver blueprints/tareas_programadas.py), nunca
+    por usuario. Deduplicado por URL (normalizada) en el mismo documento de
+    estado que ya usa detectar_avisos_oficiales -- igual que ese, NUNCA
+    publica nada solo: todo queda "pendiente" de aprobación manual desde
+    /admin."""
+    ref_estado = _doc_estado(db)
+    estado = ref_estado.get().to_dict() or {}
+    urls_ya_vistas = set(estado.get("avisos_inap_urls_vistas") or [])
+
+    hoy = datetime.utcnow().strftime("%Y%m%d")
+    candidatos = []  # [{"titulo", "url", "snippet"}]
+    urls_nuevas_este_ciclo = set()
+    consultas_realizadas = 0
+
+    for consulta in _CONSULTAS_VIGILANCIA_INAP:
+        consultas_realizadas += 1
+        resultados = buscar_web_deepseek(consulta, count=5)
+        if resultados is None:
+            logger.warning("Vigilancia INAP: fallo en la búsqueda web para %r, se continúa con las demás", consulta)
+            continue
+        for resultado in resultados:
+            url_norm = _normalizar_url(resultado["url"])
+            if not url_norm or url_norm in urls_ya_vistas or url_norm in urls_nuevas_este_ciclo:
+                continue
+            urls_nuevas_este_ciclo.add(url_norm)
+            candidatos.append(resultado)
+
+    creados = 0
+    if candidatos:
+        resultados_ia = _clasificar_relevancia_inap_con_ia(candidatos)
+        for indice, candidato in enumerate(candidatos):
+            resultado = resultados_ia.get(indice)
+            if not resultado:
+                continue
+            _guardar_aviso_oficial(
+                db, candidato["titulo"], resultado["oposiciones"], resultado["tipo"], hoy,
+                url=candidato["url"], campo_url="url_inap", motivo_ia=resultado["motivo"],
+            )
+            creados += 1
+
+    if urls_nuevas_este_ciclo:
+        urls_ya_vistas = urls_ya_vistas | urls_nuevas_este_ciclo
+        ref_estado.set({"avisos_inap_urls_vistas": list(urls_ya_vistas)[-500:]}, merge=True)
+
+    logger.info(
+        "Vigilancia INAP: %s consultas, %s candidatos nuevos, %s avisos creados",
+        consultas_realizadas, len(candidatos), creados,
+    )
+    return creados
+
 
 def _fechas_a_revisar(estado):
     """Normalmente devuelve solo [hoy]; si quedan días sin revisar desde la
@@ -547,12 +700,20 @@ def _clasificar_aviso(titulo):
     return "otro"
 
 
-def _guardar_aviso_oficial(db, item, titulo, oposiciones, tipo, fecha_boe, motivo_ia=None):
+def _guardar_aviso_oficial(db, titulo, oposiciones, tipo, fecha_boe, url="", campo_url="url_boe", motivo_ia=None):
     # Un único aviso con TODAS las oposiciones afectadas (p. ej. una
     # resolución que menciona a la vez al Cuerpo General Administrativo y
     # al de Gestión) -- así solo hace falta aprobarlo una vez y llega a las
     # páginas/usuarios de cada oposición, en vez de crear un documento
     # duplicado por oposición.
+    #
+    # url/campo_url (en vez de recibir el `item` del sumario del BOE y
+    # extraer la URL por dentro, como antes): así sirve igual para el BOE
+    # (el llamador extrae la URL con _buscar_clave ANTES de llamar) y para
+    # detectar_avisos_inap (que ya tiene la URL directa del resultado de
+    # búsqueda, sin ningún "item" del BOE del que extraerla). El panel admin
+    # ya distingue "url_boe" de "url_inap" como dos campos separados del
+    # mismo documento (ver blueprints/admin.py).
     resumen = titulo[:500]
     if motivo_ia:
         resumen = f"{titulo[:400]} — {motivo_ia}"[:500]
@@ -561,7 +722,7 @@ def _guardar_aviso_oficial(db, item, titulo, oposiciones, tipo, fecha_boe, motiv
         "tipo": tipo,
         "titulo": titulo[:300],
         "resumen": resumen,
-        "url_boe": _buscar_clave(item, "url_html") or _buscar_clave(item, "url_pdf") or "",
+        campo_url: url,
         "fecha_boe": fecha_boe,
         "fecha_deteccion": datetime.utcnow().isoformat(),
         "estado": "pendiente",
@@ -624,7 +785,8 @@ def detectar_avisos_oficiales(db):
                 tipo = _clasificar_aviso(titulo)
                 if tipo == "otro":
                     continue  # menciona el cuerpo pero no parece un aviso de convocatoria/lista/examen
-                _guardar_aviso_oficial(db, item, titulo, oposiciones_afectadas, tipo, fecha)
+                url_item = _buscar_clave(item, "url_html") or _buscar_clave(item, "url_pdf") or ""
+                _guardar_aviso_oficial(db, titulo, oposiciones_afectadas, tipo, fecha, url=url_item)
                 creados += 1
                 ids_nuevos.add(item_id)
                 continue
@@ -650,9 +812,10 @@ def detectar_avisos_oficiales(db):
             resultado = resultados_ia.get(indice)
             if not resultado:
                 continue
+            url_item = _buscar_clave(item, "url_html") or _buscar_clave(item, "url_pdf") or ""
             _guardar_aviso_oficial(
-                db, item, titulo, resultado["oposiciones"], "posible_relevancia_temario", fecha,
-                motivo_ia=resultado["motivo"],
+                db, titulo, resultado["oposiciones"], "posible_relevancia_temario", fecha,
+                url=url_item, motivo_ia=resultado["motivo"],
             )
             creados += 1
             ids_nuevos.add(item_id)

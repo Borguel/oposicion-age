@@ -102,6 +102,57 @@ _TIMEOUT_STREAMING = (10, 60)
 
 _URL_DEEPSEEK = "https://api.deepseek.com/chat/completions"
 
+# API de Search de DeepSeek (anunciada por email, 0,75$ por cada 1000
+# solicitudes con éxito) -- endpoint distinto de /chat/completions, así que
+# no reutiliza _post_deepseek_con_reintentos (hardcodeada a esa URL). Pensada
+# para muy pocas llamadas al día (ver vigilancia_boe.py::detectar_avisos_inap,
+# el único llamador), nunca por usuario/petición -- el coste real es de
+# céntimos al año.
+_URL_DEEPSEEK_BUSQUEDA = "https://api.deepseek.com/v1/tools/search"
+
+
+def buscar_web_deepseek(query, count=5):
+    """Búsqueda web real vía la API de Search de DeepSeek. Devuelve una
+    lista de resultados [{"titulo", "url", "snippet"}] (puede estar vacía
+    si no hay resultados) o None si la petición falla del todo (sin API
+    key, error tras los reintentos, respuesta sin forma reconocible) --
+    igual que el resto de funciones de este archivo, nunca lanza para no
+    romper al llamador."""
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    if not api_key:
+        return None
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    payload = {"query": query, "count": count, "need_content": False}
+    intentos_restantes = _REINTENTOS_TRANSITORIOS
+    while True:
+        try:
+            response = requests.post(_URL_DEEPSEEK_BUSQUEDA, headers=headers, json=payload, timeout=15)
+            response.raise_for_status()
+            break
+        except requests.exceptions.RequestException as e:
+            if _es_error_transitorio(e) and intentos_restantes > 0:
+                intentos_restantes -= 1
+                time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
+                continue
+            logger.warning("Fallo llamando a la API de búsqueda de DeepSeek (query=%r)", query, exc_info=True)
+            return None
+    try:
+        datos = response.json()
+    except ValueError:
+        logger.warning("Respuesta no-JSON de la API de búsqueda de DeepSeek (query=%r)", query)
+        return None
+    resultados = datos.get("results") if isinstance(datos, dict) else None
+    if not isinstance(resultados, list):
+        return []
+    return [
+        {
+            "titulo": str(r.get("title") or "").strip(),
+            "url": str(r.get("url") or "").strip(),
+            "snippet": str(r.get("snippet") or r.get("content") or "").strip(),
+        }
+        for r in resultados if isinstance(r, dict) and r.get("url")
+    ]
+
 
 def _leer_respuesta_completa(headers, payload, timeout):
     """Llamada clásica (stream=false): se espera a la respuesta entera y se

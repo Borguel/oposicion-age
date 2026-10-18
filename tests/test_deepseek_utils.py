@@ -1518,3 +1518,62 @@ class TestDetectarTextoLegal:
         # general cita bastante la palabra "artículo".
         texto = " ".join(f"El artículo {n} trata un aspecto distinto del tema." for n in range(1, 20))
         assert deepseek_utils.detectar_texto_legal(texto) is False
+
+
+def _respuesta_busqueda(resultados):
+    mock = MagicMock()
+    mock.raise_for_status.return_value = None
+    mock.json.return_value = {"results": resultados}
+    return mock
+
+
+class TestBuscarWebDeepseek:
+    """buscar_web_deepseek: endpoint distinto de /chat/completions (API de
+    Search de DeepSeek), con el mismo criterio de reintento transitorio que
+    el resto del archivo."""
+
+    def test_sin_api_key_devuelve_none(self, monkeypatch):
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        assert deepseek_utils.buscar_web_deepseek("consulta") is None
+
+    def test_devuelve_los_resultados_normalizados(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        resultados = [
+            {"title": "Lista de admitidos GACE", "url": "https://inap.es/aviso1", "snippet": "texto..."},
+            {"title": "Sin url, se descarta", "snippet": "texto..."},
+        ]
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_busqueda(resultados)) as mock_post:
+            resultado = deepseek_utils.buscar_web_deepseek("consulta de prueba", count=5)
+        assert resultado == [{"titulo": "Lista de admitidos GACE", "url": "https://inap.es/aviso1", "snippet": "texto..."}]
+        payload_enviado = mock_post.call_args.kwargs["json"]
+        assert payload_enviado == {"query": "consulta de prueba", "count": 5, "need_content": False}
+        assert mock_post.call_args.args[0] == "https://api.deepseek.com/v1/tools/search"
+
+    def test_reintenta_ante_error_5xx_y_acaba_devolviendo_resultados(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", side_effect=[
+            _respuesta_http_error(503), _respuesta_busqueda([])
+        ]) as mock_post, patch("deepseek_utils.time.sleep"):
+            resultado = deepseek_utils.buscar_web_deepseek("consulta")
+        assert resultado == []
+        assert mock_post.call_count == 2
+
+    def test_no_reintenta_ante_error_4xx(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_http_error(401)) as mock_post, \
+             patch("deepseek_utils.time.sleep") as mock_sleep:
+            resultado = deepseek_utils.buscar_web_deepseek("consulta")
+        assert resultado is None
+        assert mock_post.call_count == 1
+        mock_sleep.assert_not_called()
+
+    def test_agota_los_reintentos_y_devuelve_none(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", side_effect=[
+            requests.exceptions.ConnectionError(),
+            requests.exceptions.ConnectionError(),
+            requests.exceptions.ConnectionError(),
+        ]) as mock_post, patch("deepseek_utils.time.sleep"):
+            resultado = deepseek_utils.buscar_web_deepseek("consulta")
+        assert resultado is None
+        assert mock_post.call_count == 3

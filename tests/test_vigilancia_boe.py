@@ -615,3 +615,101 @@ class TestRelevanciaTemarioConIA:
         contenido_user = mock_ia.call_args.kwargs["messages"][1]["content"]
         titulos_en_prompt = contenido_user.count("Estatuto Básico del empleado público")
         assert titulos_en_prompt == vigilancia_boe._MAX_CANDIDATOS_RELEVANCIA_IA_POR_CICLO
+
+
+class TestDetectarAvisosInap:
+    # Complementa a detectar_avisos_oficiales con una búsqueda web real
+    # (INAP/Comisión Permanente de Selección nunca pasa por el sumario del
+    # BOE) -- mismo criterio de "nunca publica nada solo, todo pendiente".
+
+    def _resultado(self, url, titulo="Lista de admitidos GACE", snippet="texto..."):
+        return {"titulo": titulo, "url": url, "snippet": snippet}
+
+    def test_una_sola_llamada_de_ia_para_todas_las_consultas_del_ciclo(self, db):
+        # Las 3 consultas fijas (una por cuerpo) devuelven resultados
+        # distintos, pero la clasificación debe hacerse en UNA sola llamada
+        # para todos los candidatos del ciclo, no una por consulta.
+        with patch("vigilancia_boe.buscar_web_deepseek", side_effect=[
+            [self._resultado("https://inap.es/age")],
+            [self._resultado("https://inap.es/gace")],
+            [self._resultado("https://inap.es/auxiliar")],
+        ]) as mock_buscar, patch("vigilancia_boe.call_deepseek_api", return_value='{"resultados": []}') as mock_ia:
+            creados = vigilancia_boe.detectar_avisos_inap(db)
+
+        assert creados == 0
+        assert mock_buscar.call_count == len(vigilancia_boe._CONSULTAS_VIGILANCIA_INAP)
+        mock_ia.assert_called_once()
+
+    def test_resultado_marcado_relevante_crea_aviso_pendiente_con_url_inap(self, db):
+        respuesta_ia = (
+            '{"resultados": [{"indice": 0, "relevante": true, "oposiciones": ["GACE"], '
+            '"tipo": "lista_admitidos", "motivo": "Lista real de admitidos del primer ejercicio"}]}'
+        )
+        with patch("vigilancia_boe.buscar_web_deepseek", side_effect=[
+            [self._resultado("https://inap.es/gace-admitidos")], [], [],
+        ]), patch("vigilancia_boe.call_deepseek_api", return_value=respuesta_ia):
+            creados = vigilancia_boe.detectar_avisos_inap(db)
+
+        assert creados == 1
+        avisos = list(db.collection("avisos_oficiales").stream())
+        assert len(avisos) == 1
+        d = avisos[0].to_dict()
+        assert d["estado"] == "pendiente"
+        assert d["url_inap"] == "https://inap.es/gace-admitidos"
+        assert d.get("url_boe", "") == ""
+        assert d["oposiciones"] == ["GACE"]
+        assert d["tipo"] == "lista_admitidos"
+
+    def test_resultado_descartado_por_la_ia_no_crea_aviso(self, db):
+        with patch("vigilancia_boe.buscar_web_deepseek", side_effect=[
+            [self._resultado("https://foro-opositores.com/comentario")], [], [],
+        ]), patch("vigilancia_boe.call_deepseek_api", return_value='{"resultados": [{"indice": 0, "relevante": false}]}'):
+            creados = vigilancia_boe.detectar_avisos_inap(db)
+
+        assert creados == 0
+        assert list(db.collection("avisos_oficiales").stream()) == []
+
+    def test_no_duplica_una_url_ya_vista_en_una_ejecucion_anterior(self, db):
+        db.sembrar(("config", "vigilancia_boe"), {"avisos_inap_urls_vistas": ["https://inap.es/gace-admitidos"]})
+        with patch("vigilancia_boe.buscar_web_deepseek", side_effect=[
+            [self._resultado("https://inap.es/gace-admitidos")], [], [],
+        ]), patch("vigilancia_boe.call_deepseek_api") as mock_ia:
+            creados = vigilancia_boe.detectar_avisos_inap(db)
+
+        assert creados == 0
+        mock_ia.assert_not_called()  # nada nuevo que clasificar
+
+    def test_url_con_querystring_distinta_se_deduplica_igual(self, db):
+        # Misma publicación, con un parámetro de tracking distinto --
+        # _normalizar_url debe tratarla como la misma URL ya vista.
+        db.sembrar(("config", "vigilancia_boe"), {"avisos_inap_urls_vistas": ["https://inap.es/gace-admitidos"]})
+        with patch("vigilancia_boe.buscar_web_deepseek", side_effect=[
+            [self._resultado("https://inap.es/gace-admitidos?utm_source=x")], [], [],
+        ]), patch("vigilancia_boe.call_deepseek_api") as mock_ia:
+            creados = vigilancia_boe.detectar_avisos_inap(db)
+
+        assert creados == 0
+        mock_ia.assert_not_called()
+
+    def test_un_fallo_de_busqueda_en_una_consulta_no_rompe_las_demas(self, db):
+        respuesta_ia = (
+            '{"resultados": [{"indice": 0, "relevante": true, "oposiciones": ["AUXILIAR"], '
+            '"tipo": "lista_admitidos", "motivo": "motivo"}]}'
+        )
+        with patch("vigilancia_boe.buscar_web_deepseek", side_effect=[
+            None,  # la primera consulta falla del todo
+            [],
+            [self._resultado("https://inap.es/auxiliar-admitidos")],
+        ]), patch("vigilancia_boe.call_deepseek_api", return_value=respuesta_ia):
+            creados = vigilancia_boe.detectar_avisos_inap(db)
+
+        assert creados == 1
+
+    def test_guarda_las_urls_vistas_para_la_siguiente_ejecucion(self, db):
+        with patch("vigilancia_boe.buscar_web_deepseek", side_effect=[
+            [self._resultado("https://inap.es/age-admitidos")], [], [],
+        ]), patch("vigilancia_boe.call_deepseek_api", return_value='{"resultados": [{"indice": 0, "relevante": false}]}'):
+            vigilancia_boe.detectar_avisos_inap(db)
+
+        estado = db.leer(("config", "vigilancia_boe"))
+        assert "https://inap.es/age-admitidos" in estado["avisos_inap_urls_vistas"]

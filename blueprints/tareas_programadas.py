@@ -25,6 +25,7 @@ from push_utils import enviar_push, borrar_suscripcion
 from coste_ia import resumen_coste_usuario
 from vigilancia_boe import (
     detectar_avisos_oficiales,
+    detectar_avisos_inap,
     detectar_cambios_leyes_vigiladas,
     verificar_bloque_temas_referenciados,
 )
@@ -321,17 +322,22 @@ def vigilar_boe():
         return jsonify({"error": "No autorizado"}), 401
 
     avisos_creados = detectar_avisos_oficiales(db)
+    # Complementa al BOE (que nunca cubre publicaciones que solo salen en
+    # inap.es/run.gob.es, como listas de admitidos o notas de corte) con
+    # una búsqueda web real -- ver vigilancia_boe.py::detectar_avisos_inap
+    # para el control de coste (unas pocas consultas fijas al día).
+    avisos_inap_creados = detectar_avisos_inap(db)
     cambios_propuestos = detectar_cambios_leyes_vigiladas(db)
     # Chequeo de salud, no de vigilancia -- barato (solo lee Firestore, sin
     # llamadas al BOE ni a DeepSeek) así que se hace en cada ciclo diario.
     temas_faltantes = verificar_bloque_temas_referenciados(db)
 
     logger.info(
-        "Vigilancia BOE: %s avisos oficiales nuevos, %s propuestas de cambio de temario, %s temas referenciados que ya no existen",
-        avisos_creados, cambios_propuestos, len(temas_faltantes),
+        "Vigilancia BOE: %s avisos oficiales nuevos (%s vía búsqueda INAP), %s propuestas de cambio de temario, %s temas referenciados que ya no existen",
+        avisos_creados + avisos_inap_creados, avisos_inap_creados, cambios_propuestos, len(temas_faltantes),
     )
     return jsonify({
-        "avisos_creados": avisos_creados,
+        "avisos_creados": avisos_creados + avisos_inap_creados,
         "cambios_propuestos": cambios_propuestos,
         "temas_faltantes": len(temas_faltantes),
     })
