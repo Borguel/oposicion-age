@@ -704,6 +704,38 @@ def enviar_email_alerta_mensaje_soporte(destinatario, email_usuario, mensaje):
             asunto=f"✉️ Nuevo mensaje de soporte de {email_usuario or '(sin email)'}", html=html)
 
 
+def enviar_email_alerta_avisos_oficiales_pendientes(destinatario, total, total_boe, total_inap):
+    """Aviso interno (no es un email de marca para un usuario) de que la
+    vigilancia diaria del BOE/INAP ha dejado avisos oficiales nuevos en
+    estado "pendiente" -- ver vigilancia_boe.py (detectar_avisos_oficiales +
+    detectar_avisos_inap) y blueprints/tareas_programadas.py::vigilar_boe,
+    que llama a esto una vez por ciclo si se ha creado al menos un aviso.
+    Sin este correo, un aviso nuevo (convocatoria, lista de admitidos, nota
+    de corte...) se quedaba esperando en Firestore hasta que alguien abriera
+    el panel de administración por su cuenta -- con poco tráfico que empuje
+    a entrar a diario, eso podía tardar días y llegar tarde para publicarlo."""
+    plural = total != 1
+    aviso_texto = f"{total} aviso{'s' if plural else ''} oficial{'es' if plural else ''} nuevo{'s' if plural else ''}"
+    desglose = f" ({total_boe} del BOE, {total_inap} vía búsqueda INAP)" if total_boe and total_inap else ""
+
+    template_id = os.getenv("BREVO_TEMPLATE_AVISOS_PENDIENTES")
+    if template_id:
+        _enviar(destinatario, "avisos oficiales pendientes", template_id=template_id, datos={
+            "total": total, "total_boe": total_boe, "total_inap": total_inap,
+        })
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">La vigilancia diaria del BOE/INAP ha detectado <strong>{aviso_texto}</strong>{desglose},
+      en estado pendiente de revisión.</p>
+      <p>Revísalo{'s' if plural else ''} desde el panel de administración (Reportes → Avisos oficiales)
+      para publicarlo{'s' if plural else ''} o descartarlo{'s' if plural else ''}.</p>
+    """
+    html = _plantilla_html(f"{aviso_texto} pendiente{'s' if plural else ''} de revisar", cuerpo, emoji="📋")
+    _enviar(destinatario, "avisos oficiales pendientes",
+            asunto=f"📋 {aviso_texto} pendiente{'s' if plural else ''} de revisar", html=html)
+
+
 def enviar_email_alerta_coste_ia(destinatario, gasto_hoy, media_historica):
     """Aviso interno (no es un email de marca para un usuario) de que el
     gasto en IA de hoy se ha disparado respecto a la media reciente --

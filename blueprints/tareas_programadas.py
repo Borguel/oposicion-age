@@ -17,6 +17,7 @@ from email_utils import (
     enviar_email_prueba_terminada,
     enviar_email_activar_oposicion,
     enviar_email_alerta_coste_ia,
+    enviar_email_alerta_avisos_oficiales_pendientes,
 )
 from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
 from oposiciones import OPOSICIONES
@@ -327,6 +328,13 @@ def vigilar_boe():
     # una búsqueda web real -- ver vigilancia_boe.py::detectar_avisos_inap
     # para el control de coste (unas pocas consultas fijas al día).
     avisos_inap_creados = detectar_avisos_inap(db)
+    total_avisos = avisos_creados + avisos_inap_creados
+    if total_avisos > 0:
+        # Sin este aviso, un aviso nuevo se quedaba esperando en Firestore
+        # hasta que alguien abriera el panel de admin por su cuenta -- ver
+        # email_utils.enviar_email_alerta_avisos_oficiales_pendientes.
+        destinatario = os.getenv("ADMIN_ALERT_EMAIL") or os.getenv("BREVO_FROM_EMAIL", "dominatuopo@gmail.com")
+        enviar_email_alerta_avisos_oficiales_pendientes(destinatario, total_avisos, avisos_creados, avisos_inap_creados)
     cambios_propuestos = detectar_cambios_leyes_vigiladas(db)
     # Chequeo de salud, no de vigilancia -- barato (solo lee Firestore, sin
     # llamadas al BOE ni a DeepSeek) así que se hace en cada ciclo diario.

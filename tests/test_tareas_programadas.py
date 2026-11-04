@@ -469,13 +469,42 @@ def test_vigilar_boe_con_clave_incorrecta_devuelve_401(client):
 def test_vigilar_boe_llama_a_las_tres_comprobaciones_y_devuelve_los_totales(client, db):
     with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
          patch("blueprints.tareas_programadas.detectar_avisos_oficiales", return_value=2) as mock_avisos, \
+         patch("blueprints.tareas_programadas.detectar_avisos_inap", return_value=0) as mock_avisos_inap, \
          patch("blueprints.tareas_programadas.detectar_cambios_leyes_vigiladas", return_value=1) as mock_cambios, \
-         patch("blueprints.tareas_programadas.verificar_bloque_temas_referenciados", return_value=[{"oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01"}]) as mock_salud:
+         patch("blueprints.tareas_programadas.verificar_bloque_temas_referenciados", return_value=[{"oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01"}]) as mock_salud, \
+         patch("blueprints.tareas_programadas.enviar_email_alerta_avisos_oficiales_pendientes") as mock_alerta:
         resp = client.post("/tareas/vigilar-boe", headers={"X-Cron-Key": "secreta"})
     assert resp.status_code == 200
     assert resp.get_json() == {"avisos_creados": 2, "cambios_propuestos": 1, "temas_faltantes": 1}
     mock_avisos.assert_called_once_with(db)
+    mock_avisos_inap.assert_called_once_with(db)
     mock_cambios.assert_called_once_with(db)
     mock_salud.assert_called_once_with(db)
+    mock_alerta.assert_called_once_with("test@example.com", 2, 2, 0)
+
+
+def test_vigilar_boe_sin_avisos_nuevos_no_manda_alerta(client, db):
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.detectar_avisos_oficiales", return_value=0), \
+         patch("blueprints.tareas_programadas.detectar_avisos_inap", return_value=0), \
+         patch("blueprints.tareas_programadas.detectar_cambios_leyes_vigiladas", return_value=0), \
+         patch("blueprints.tareas_programadas.verificar_bloque_temas_referenciados", return_value=[]), \
+         patch("blueprints.tareas_programadas.enviar_email_alerta_avisos_oficiales_pendientes") as mock_alerta:
+        resp = client.post("/tareas/vigilar-boe", headers={"X-Cron-Key": "secreta"})
+    assert resp.status_code == 200
+    mock_alerta.assert_not_called()
+
+
+def test_vigilar_boe_usa_admin_alert_email_si_esta_configurado(client, db):
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta", "ADMIN_ALERT_EMAIL": "borja@example.com"}), \
+         patch("blueprints.tareas_programadas.detectar_avisos_oficiales", return_value=1), \
+         patch("blueprints.tareas_programadas.detectar_avisos_inap", return_value=2), \
+         patch("blueprints.tareas_programadas.detectar_cambios_leyes_vigiladas", return_value=0), \
+         patch("blueprints.tareas_programadas.verificar_bloque_temas_referenciados", return_value=[]), \
+         patch("blueprints.tareas_programadas.enviar_email_alerta_avisos_oficiales_pendientes") as mock_alerta:
+        resp = client.post("/tareas/vigilar-boe", headers={"X-Cron-Key": "secreta"})
+    assert resp.status_code == 200
+    assert resp.get_json()["avisos_creados"] == 3
+    mock_alerta.assert_called_once_with("borja@example.com", 3, 1, 2)
 
 
