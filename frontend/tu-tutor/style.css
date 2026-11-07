@@ -622,7 +622,7 @@ html { scroll-behavior: smooth; }
   align-items: flex-end;
   border-top: none;
   background: transparent;
-  padding: 0 20px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding: 0 20px calc(30px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
   z-index: 12;
   gap: 7px;
