@@ -532,6 +532,16 @@
 .admin-estado-descartado { background: var(--age-neutral-bg, #eee); color: var(--age-ink-soft, #666); }
 .admin-reporte-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-reporte-oficial { background: var(--age-primary-soft); border-radius: 8px; padding: 10px 12px; margin: 8px 0; font-size: 13.5px; }
+/* Enlaces a la fuente de un aviso oficial (resolución del BOE y/o página
+   encontrada por la vigilancia de INAP) -- antes solo se enseñaba el
+   enlace si existía url_boe, así que un aviso detectado por búsqueda web
+   (que solo trae url_inap) no tenía NINGÚN enlace pinchable en la lista,
+   obligando a abrir "Editar" para ver la URL en crudo (11/2026, a
+   petición del usuario: quiere poder pinchar y revisar la fuente antes
+   de publicar o descartar). */
+.admin-reporte-enlaces { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0; }
+.admin-reporte-enlaces a { color: var(--age-primary-dark, var(--age-primary)); font-weight: 600; }
+.admin-reporte-sin-fuente { color: var(--age-danger, #b02a37); font-weight: 600; margin: 6px 0; }
 .admin-op-linea { padding: 2px 0; }
 .admin-op-correcta { color: var(--age-success, #1e7e34); font-weight: 700; }
 

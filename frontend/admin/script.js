@@ -2647,11 +2647,14 @@ async function cargarAvisosOficiales() {
     <div class="admin-reporte">
       <div class="admin-reporte-cab">
         <span class="admin-reporte-estado ${clase(a.estado)}">${escapeHtml(a.estado)}</span>
-        <span class="admin-reporte-meta">${escapeHtml((a.oposiciones || []).join(" + ") || "-")} · ${escapeHtml(a.tipo_personalizado || ETIQUETA_TIPO_AVISO_MANUAL[a.tipo] || a.tipo || "")} · ${escapeHtml(fechaCorta(a.fecha_deteccion))}</span>
+        <span class="admin-reporte-meta">${escapeHtml((a.oposiciones || []).join(" + ") || "-")} · ${escapeHtml(a.tipo_personalizado || ETIQUETA_TIPO_AVISO_MANUAL[a.tipo] || a.tipo || "")} · detectado ${escapeHtml(fechaCorta(a.fecha_deteccion))}</span>
       </div>
       <p class="admin-reporte-preg">${escapeHtml(a.titulo)}</p>
       ${a.resumen ? `<p class="admin-reporte-motivo">${escapeHtml(a.resumen)}</p>` : ""}
-      ${a.url_boe ? `<p class="admin-reporte-meta"><a href="${escapeHtml(a.url_boe)}" target="_blank" rel="noopener">Ver la resolución ↗</a></p>` : ""}
+      ${(a.url_boe || a.url_inap) ? `<p class="admin-reporte-meta admin-reporte-enlaces">
+        ${a.url_boe ? `<a href="${escapeHtml(a.url_boe)}" target="_blank" rel="noopener">Ver la resolución ↗</a>` : ""}
+        ${a.url_inap ? `<a href="${escapeHtml(a.url_inap)}" target="_blank" rel="noopener">Ver la página encontrada ↗</a>` : ""}
+      </p>` : `<p class="admin-reporte-meta admin-reporte-sin-fuente">⚠️ Sin enlace a la fuente -- revisa con cuidado antes de publicar.</p>`}
       ${a.revisado_por_email ? `<p class="admin-reporte-meta boe-revisado">Aplicado por: ${escapeHtml(a.revisado_por_email)} · Fecha: ${escapeHtml(fechaCorta(a.fecha_revision))}</p>` : ""}
       <div class="admin-reporte-acciones">
         ${a.estado !== "publicado" ? `<button class="age-btn age-btn-primary admin-mini" data-publicar="${escapeHtml(a.id)}">Publicar</button>` : ""}

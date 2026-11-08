@@ -39,6 +39,7 @@ import random
 import re
 import time
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 
 import requests
 
@@ -428,6 +429,17 @@ def _normalizar_url(url):
     return (url or "").split("?")[0].split("#")[0].rstrip("/")
 
 
+def _titulo_o_respaldo(titulo, url):
+    """buscar_web_deepseek ya limpia cualquier etiqueta HTML del título,
+    pero si eso deja el título vacío (una página cuyo "title" real era
+    puro marcado, sin texto) mejor un título genérico pero legible que uno
+    en blanco en /admin -- se usa el dominio de la URL."""
+    if titulo:
+        return titulo
+    dominio = urlparse(url).netloc.removeprefix("www.")
+    return f"Resultado de búsqueda en {dominio}" if dominio else "Resultado de búsqueda (sin título)"
+
+
 def detectar_avisos_inap(db):
     """Complementa a detectar_avisos_oficiales (que SOLO vigila el sumario
     del BOE) con una búsqueda web real de publicaciones de la Comisión
@@ -469,7 +481,7 @@ def detectar_avisos_inap(db):
             if not resultado:
                 continue
             _guardar_aviso_oficial(
-                db, candidato["titulo"], resultado["oposiciones"], resultado["tipo"], hoy,
+                db, _titulo_o_respaldo(candidato["titulo"], candidato["url"]), resultado["oposiciones"], resultado["tipo"], hoy,
                 url=candidato["url"], campo_url="url_inap", motivo_ia=resultado["motivo"],
             )
             creados += 1

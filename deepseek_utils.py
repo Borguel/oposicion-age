@@ -111,6 +111,22 @@ _URL_DEEPSEEK = "https://api.deepseek.com/chat/completions"
 _URL_DEEPSEEK_BUSQUEDA = "https://api.deepseek.com/v1/tools/search"
 
 
+_RE_ETIQUETA_HTML = re.compile(r"<[^>]+>")
+_RE_ESPACIO_MULTIPLE = re.compile(r"\s+")
+
+
+def _limpiar_texto_resultado(texto):
+    """Algunas páginas indexadas por la búsqueda devuelven como título/
+    snippet un fragmento de HTML crudo (p. ej. una tabla mal extraída:
+    "<table><tr><td>Nº<br/>Orden</td>...") en vez de texto legible -- se
+    ha visto en producción (06/11/2026, aviso de vigilancia INAP con ese
+    título). Quita cualquier etiqueta y normaliza espacios para que lo que
+    se guarda y se le enseña al usuario en /admin sea siempre texto
+    plano, nunca marcado a medio renderizar."""
+    sin_etiquetas = _RE_ETIQUETA_HTML.sub(" ", texto)
+    return _RE_ESPACIO_MULTIPLE.sub(" ", sin_etiquetas).strip()
+
+
 def buscar_web_deepseek(query, count=5):
     """Búsqueda web real vía la API de Search de DeepSeek. Devuelve una
     lista de resultados [{"titulo", "url", "snippet"}] (puede estar vacía
@@ -146,9 +162,9 @@ def buscar_web_deepseek(query, count=5):
         return []
     return [
         {
-            "titulo": str(r.get("title") or "").strip(),
+            "titulo": _limpiar_texto_resultado(str(r.get("title") or "")),
             "url": str(r.get("url") or "").strip(),
-            "snippet": str(r.get("snippet") or r.get("content") or "").strip(),
+            "snippet": _limpiar_texto_resultado(str(r.get("snippet") or r.get("content") or "")),
         }
         for r in resultados if isinstance(r, dict) and r.get("url")
     ]

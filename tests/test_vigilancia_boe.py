@@ -713,3 +713,21 @@ class TestDetectarAvisosInap:
 
         estado = db.leer(("config", "vigilancia_boe"))
         assert "https://inap.es/age-admitidos" in estado["avisos_inap_urls_vistas"]
+
+    def test_titulo_vacio_tras_limpiar_usa_el_dominio_como_respaldo(self, db):
+        # buscar_web_deepseek ya limpia el HTML del título -- pero si una
+        # página devuelve un "title" que era puro marcado (nada de texto
+        # real), queda vacío. Un aviso sin título en /admin es tan confuso
+        # como uno con HTML en crudo (visto en producción, 06/11/2026), así
+        # que se usa el dominio como título legible de respaldo.
+        respuesta_ia = (
+            '{"resultados": [{"indice": 0, "relevante": true, "oposiciones": ["GACE"], '
+            '"tipo": "lista_admitidos", "motivo": "motivo"}]}'
+        )
+        with patch("vigilancia_boe.buscar_web_deepseek", side_effect=[
+            [self._resultado("https://www.inap.es/gace-admitidos", titulo="")], [], [],
+        ]), patch("vigilancia_boe.call_deepseek_api", return_value=respuesta_ia):
+            vigilancia_boe.detectar_avisos_inap(db)
+
+        avisos = list(db.collection("avisos_oficiales").stream())
+        assert avisos[0].to_dict()["titulo"] == "Resultado de búsqueda en inap.es"

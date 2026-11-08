@@ -1549,6 +1549,23 @@ class TestBuscarWebDeepseek:
         assert payload_enviado == {"query": "consulta de prueba", "count": 5, "need_content": False}
         assert mock_post.call_args.args[0] == "https://api.deepseek.com/v1/tools/search"
 
+    def test_limpia_html_crudo_del_titulo_y_el_snippet(self, monkeypatch):
+        # Visto en producción (06/11/2026): una página indexada devolvía un
+        # "title" que era en realidad una tabla HTML mal extraída
+        # ("<table><tr><td>Nº<br/>Orden</td>...") -- acababa guardado y
+        # mostrado tal cual en /admin. Se limpia aquí, en el único punto de
+        # entrada de resultados de búsqueda, para que ningún llamador tenga
+        # que acordarse de hacerlo.
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        resultados = [{
+            "title": "<table><tr><td>Nº<br/>Orden</td><td>DNI</td></tr></table>",
+            "url": "https://inap.es/aviso1",
+            "snippet": "<p>Resolución   con   varios   espacios</p>",
+        }]
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_busqueda(resultados)):
+            resultado = deepseek_utils.buscar_web_deepseek("consulta")
+        assert resultado == [{"titulo": "Nº Orden DNI", "url": "https://inap.es/aviso1", "snippet": "Resolución con varios espacios"}]
+
     def test_reintenta_ante_error_5xx_y_acaba_devolviendo_resultados(self, monkeypatch):
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
         with patch("deepseek_utils.requests.post", side_effect=[
