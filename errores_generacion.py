@@ -57,10 +57,15 @@ def registrar_error_generacion(db, *, tema_id, fuente, pregunta_texto, detalle,
     campos_extra permite a cada llamante conservar campos propios útiles
     que no forman parte del esquema común (p. ej. uid, oposicion,
     pregunta_id en los reportes de usuario) sin descartarlos.
+
+    Devuelve el id del documento creado, o None si la escritura falló --
+    /reportar-pregunta lo usa para no confirmarle por email al usuario un
+    reporte que en realidad no se guardó.
     """
     tipo = tipo_error or _clasificar_tipo_error(detalle)
     try:
-        db.collection("errores_generacion").document().set({
+        ref = db.collection("errores_generacion").document()
+        ref.set({
             "tema_id": tema_id,
             "tipo_error": tipo,
             "fuente": fuente,
@@ -73,6 +78,8 @@ def registrar_error_generacion(db, *, tema_id, fuente, pregunta_texto, detalle,
         })
         logger.info("[errores_generacion] documento creado: tema_id=%s tipo_error=%s fuente=%s",
                     tema_id, tipo, fuente)
+        return ref.id
     except Exception:
         logger.warning("[errores_generacion] no se pudo escribir el documento (tema_id=%s fuente=%s)",
                         tema_id, fuente, exc_info=True)
+        return None

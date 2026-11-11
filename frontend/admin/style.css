@@ -542,6 +542,10 @@
 .admin-reporte-enlaces { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0; }
 .admin-reporte-enlaces a { color: var(--age-primary-dark, var(--age-primary)); font-weight: 600; }
 .admin-reporte-sin-fuente { color: var(--age-danger, #b02a37); font-weight: 600; margin: 6px 0; }
+/* Reporte de pregunta cuya pregunta ya se corrigió (preguntas_editar anota
+   la corrección en el reporte): aviso de que "Marcar revisado" mandará el
+   correo de "corregida" con el resumen de cambios. */
+.admin-reporte-corregida { color: var(--age-success, #1e7e34); font-weight: 600; margin: 6px 0; }
 .admin-op-linea { padding: 2px 0; }
 .admin-op-correcta { color: var(--age-success, #1e7e34); font-weight: 700; }
 

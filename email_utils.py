@@ -622,6 +622,178 @@ def enviar_email_aviso_oficial(destinatario, titulo, tipo_legible, url_boe, url_
     _enviar(destinatario, "aviso oficial", asunto=f"{tipo_legible} publicada para {oposicion_nombre}", html=html)
 
 
+# ---------------------------------------------------------------------------
+# Reportes de preguntas (blueprints/test_ia.py::reportar_pregunta para el
+# alta, blueprints/admin.py::reportes_actualizar para la revisión): tres
+# correos al usuario que reportó -- recibido, revisado y corregido, revisado
+# y sin cambios. Transaccionales: sin baja.
+# ---------------------------------------------------------------------------
+_RESUMEN_CAMPO_CAMBIADO = {
+    "enunciado": "Enunciado reformulado.",
+    "explicacion": "Explicación actualizada.",
+}
+
+
+def _resumen_cambio(cambio):
+    """Frase legible para un cambio guardado por preguntas_editar en
+    reporte["correccion"]["cambios"] ({campo, antes, despues}); campo es
+    "enunciado", "opcion_A".."opcion_D", "respuesta_correcta" o
+    "explicacion"."""
+    campo = cambio.get("campo", "")
+    if campo == "respuesta_correcta":
+        return f"Respuesta correcta: de {cambio.get('antes') or '?'} a {cambio.get('despues') or '?'}."
+    if campo.startswith("opcion_"):
+        return f"Opción {campo[-1]} corregida."
+    return _RESUMEN_CAMPO_CAMBIADO.get(campo, "Contenido de la pregunta actualizado.")
+
+
+def _bloque_pregunta_html(pregunta):
+    """Tarjeta gris con la pregunta tal y como está ahora: enunciado, las
+    cuatro opciones con la correcta resaltada y la explicación. Tolera una
+    pregunta mínima (solo enunciado, p. ej. una generada por IA que no está
+    en el banco oficial): entonces solo se cita el enunciado."""
+    opciones = pregunta.get("opciones") or {}
+    correcta = (pregunta.get("respuesta_correcta") or "").upper()
+    filas = ""
+    for letra in ("A", "B", "C", "D"):
+        texto = opciones.get(letra)
+        if not texto:
+            continue
+        es_correcta = letra == correcta
+        estilo = "color:#1e7e34; font-weight:700;" if es_correcta else f"color:{_COLOR_INK};"
+        marca = " ✓" if es_correcta else ""
+        filas += f'<p style="margin:6px 0; {estilo}">{letra}) {escape(str(texto))}{marca}</p>'
+    explicacion = (pregunta.get("explicacion") or "").strip()
+    bloque_explicacion = (
+        f'<p style="margin:12px 0 0; font-size:13.5px; color:{_COLOR_INK_SOFT}; white-space:pre-wrap;">'
+        f"<strong>Explicación:</strong> {escape(explicacion)}</p>"
+        if explicacion else ""
+    )
+    return f"""
+      <div style="margin:16px 0; padding:14px 16px; background:{_COLOR_BG}; border-radius:10px;">
+        <p style="margin:0 0 10px; font-weight:700;">{escape(pregunta.get("pregunta") or "")}</p>
+        {filas}
+        {bloque_explicacion}
+      </div>
+    """
+
+
+def _bloque_nota_html(nota):
+    """Mensaje personal opcional del administrador al marcar el reporte
+    como revisado; vacío si no se escribió ninguno."""
+    nota = (nota or "").strip()
+    if not nota:
+        return ""
+    return f"""
+      <div style="margin:16px 0; padding:12px 16px; border-left:4px solid {_COLOR_PRIMARY};">
+        <p style="margin:0 0 4px; font-size:13px; font-weight:700; color:{_COLOR_INK_SOFT};">Mensaje del equipo</p>
+        <p style="margin:0; white-space:pre-wrap;">{escape(nota)}</p>
+      </div>
+    """
+
+
+def enviar_email_pregunta_reportada(destinatario, pregunta_texto, motivo, nombre=""):
+    """Confirmación inmediata de que el reporte de una pregunta se ha
+    recibido (ver blueprints/test_ia.py::reportar_pregunta) -- sin ella, el
+    usuario no sabía si su aviso había llegado a alguna parte."""
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
+    pregunta_texto = (pregunta_texto or "")[:400]
+
+    template_id = os.getenv("BREVO_TEMPLATE_PREGUNTA_REPORTADA")
+    if template_id:
+        _enviar(destinatario, "pregunta reportada", template_id=template_id, datos={
+            "saludo": saludo,
+            "pregunta_texto": pregunta_texto,
+            "motivo": motivo or "",
+        })
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, gracias por avisarnos. Hemos recibido tu reporte sobre la siguiente
+      pregunta y la vamos a revisar con atención:</p>
+      <div style="margin:16px 0; padding:14px 16px; background:{_COLOR_BG}; border-radius:10px;">
+        <p style="margin:0; font-weight:700;">{escape(pregunta_texto)}</p>
+      </div>
+      <p style="margin:0 0 6px; font-size:13px; font-weight:700; color:{_COLOR_INK_SOFT};">Tu comentario</p>
+      <p style="margin:0; white-space:pre-wrap;">{escape(motivo or "")}</p>
+      <p>Cuando terminemos la revisión te escribiremos de nuevo con el resultado.</p>
+      {_aviso("No hace falta que respondas a este correo.")}
+    """
+    html = _plantilla_html("Hemos recibido tu reporte", cuerpo, emoji="📝")
+    _enviar(destinatario, "pregunta reportada", asunto="Hemos recibido tu reporte de una pregunta", html=html)
+
+
+def enviar_email_pregunta_corregida(destinatario, pregunta, cambios, nombre="", nota=""):
+    """Resultado de la revisión cuando la pregunta SÍ tenía un error y se ha
+    corregido: resumen de lo que ha cambiado y la pregunta completa ya
+    corregida (ver blueprints/admin.py::reportes_actualizar, que decide el
+    resultado según el reporte tenga o no una `correccion`)."""
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
+    resumen = [_resumen_cambio(c) for c in (cambios or [])] or ["Contenido de la pregunta actualizado."]
+
+    template_id = os.getenv("BREVO_TEMPLATE_PREGUNTA_CORREGIDA")
+    if template_id:
+        opciones = pregunta.get("opciones") or {}
+        _enviar(destinatario, "pregunta corregida", template_id=template_id, datos={
+            "saludo": saludo,
+            "resumen_cambios": " ".join(resumen),
+            "pregunta": pregunta.get("pregunta") or "",
+            "opcion_a": opciones.get("A", ""), "opcion_b": opciones.get("B", ""),
+            "opcion_c": opciones.get("C", ""), "opcion_d": opciones.get("D", ""),
+            "respuesta_correcta": pregunta.get("respuesta_correcta") or "",
+            "explicacion": pregunta.get("explicacion") or "",
+            "nota": nota or "",
+        })
+        return
+
+    lista = "".join(f'<li style="margin-bottom:6px;">{escape(r)}</li>' for r in resumen)
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, hemos revisado la pregunta que nos reportaste y tenías razón:
+      <strong>contenía un error y ya está corregida</strong>. Gracias por ayudarnos a mejorar.</p>
+      <p style="margin:16px 0 8px; font-weight:700;">Qué hemos cambiado</p>
+      <ul style="margin:0; padding-left:20px;">{lista}</ul>
+      <p style="margin:16px 0 0; font-weight:700;">La pregunta, ya corregida</p>
+      {_bloque_pregunta_html(pregunta)}
+      {_bloque_nota_html(nota)}
+    """
+    html = _plantilla_html("Hemos corregido la pregunta que reportaste", cuerpo, emoji="✅")
+    _enviar(destinatario, "pregunta corregida", asunto="Hemos corregido la pregunta que reportaste", html=html)
+
+
+def enviar_email_pregunta_sin_cambios(destinatario, pregunta, nombre="", nota=""):
+    """Resultado de la revisión cuando la pregunta estaba bien formulada.
+    `pregunta` puede ser mínima (solo "pregunta") si no está en el banco
+    oficial, p. ej. una generada por IA: entonces solo se cita el enunciado."""
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
+
+    template_id = os.getenv("BREVO_TEMPLATE_PREGUNTA_SIN_CAMBIOS")
+    if template_id:
+        opciones = pregunta.get("opciones") or {}
+        _enviar(destinatario, "pregunta sin cambios", template_id=template_id, datos={
+            "saludo": saludo,
+            "pregunta": pregunta.get("pregunta") or "",
+            "opcion_a": opciones.get("A", ""), "opcion_b": opciones.get("B", ""),
+            "opcion_c": opciones.get("C", ""), "opcion_d": opciones.get("D", ""),
+            "respuesta_correcta": pregunta.get("respuesta_correcta") or "",
+            "explicacion": pregunta.get("explicacion") or "",
+            "nota": nota or "",
+        })
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, hemos revisado con detalle la pregunta que nos reportaste. Tras la
+      revisión y el análisis, concluimos que <strong>está correctamente formulada</strong> y no
+      requiere ninguna modificación.</p>
+      {_bloque_pregunta_html(pregunta)}
+      {_bloque_nota_html(nota)}
+      <p>Gracias por tomarte el tiempo de avisarnos: cada reporte nos ayuda a mantener el contenido
+      fiable. Si después de leerla sigues pensando que hay un error, responde a este correo
+      explicándonos tu razonamiento y la volveremos a revisar.</p>
+    """
+    html = _plantilla_html("Hemos revisado la pregunta que reportaste", cuerpo, emoji="🔎")
+    _enviar(destinatario, "pregunta sin cambios", asunto="Hemos revisado la pregunta que reportaste", html=html)
+
+
 def enviar_email_cuenta_eliminada(destinatario, nombre=""):
     """Confirmación de que el borrado de cuenta (derecho de supresión RGPD)
     se ha completado -- ver gestion_cuenta.eliminar_cuenta_usuario, que la

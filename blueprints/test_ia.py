@@ -17,6 +17,7 @@ from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, c
 from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales, obtener_preguntas_psicotecnico
 from generador_preguntas_verificado import generar_test_verificado
 from errores_generacion import registrar_error_generacion
+from email_utils import enviar_email_pregunta_reportada
 from deepseek_utils import call_deepseek_api
 from registro_progreso_usuario import obtener_resumen_progreso
 from banco_fallos import ordenar_por_prioridad_repaso as ordenar_fallos_por_prioridad
@@ -478,6 +479,7 @@ def generar_test_fallos():
 
 
 @bp.route("/reportar-pregunta", methods=["POST"])
+@limiter.limit("10 per hour")
 @requiere_plan(db, "basico", global_check=False)
 def reportar_pregunta():
     """Un usuario normal reporta una pregunta con algún error. Se guarda en la
@@ -486,7 +488,13 @@ def reportar_pregunta():
     esquema con los auto-rechazos de la verificación automática de
     generador_preguntas_verificado.py (fuente="auto_verificacion").
     pregunta_id es opcional (los tests generados por IA no tienen id
-    estable): siempre se guarda el texto como referencia."""
+    estable): siempre se guarda el texto como referencia.
+
+    Se guarda también el email de quien reporta (patrón de mensajes_soporte)
+    para poder avisarle del resultado al revisarlo, y se le manda ya una
+    confirmación de recibo. Si ese mismo usuario ya tiene un reporte
+    PENDIENTE de la misma pregunta, no se crea otro ni se repite el correo
+    (sin esto, pulsar varias veces el botón mandaba varios correos)."""
     from datetime import datetime
     data = request.get_json(silent=True) or {}
     motivo = (data.get("motivo") or "").strip()
@@ -495,16 +503,33 @@ def reportar_pregunta():
         return jsonify({"error": "Indica el motivo del reporte."}), 400
     if not pregunta_texto:
         return jsonify({"error": "Falta la pregunta reportada."}), 400
-    registrar_error_generacion(
+    pregunta_texto = pregunta_texto[:1000]
+    mensaje_ok = {"mensaje": "Gracias, hemos recibido tu reporte."}
+
+    for doc in db.collection("errores_generacion").where("uid", "==", g.uid).stream():
+        previo = doc.to_dict() or {}
+        if (
+            previo.get("fuente") == "usuario_admin"
+            and previo.get("estado", "pendiente") == "pendiente"
+            and (previo.get("pregunta_texto") or "").strip() == pregunta_texto
+        ):
+            return jsonify(mensaje_ok), 200
+
+    email_usuario = getattr(g, "email", None)
+    reporte_id = registrar_error_generacion(
         db, tema_id="", fuente="usuario_admin",
-        pregunta_texto=pregunta_texto[:1000], detalle=motivo[:1000],
+        pregunta_texto=pregunta_texto, detalle=motivo[:1000],
         pregunta_id=(data.get("pregunta_id") or "").strip(),
         oposicion=obtener_oposicion_solicitada(),
         uid=g.uid,
+        email=email_usuario,
         estado="pendiente",
         fecha=datetime.utcnow().isoformat(),
     )
-    return jsonify({"mensaje": "Gracias, hemos recibido tu reporte."}), 201
+    if reporte_id and email_usuario:
+        nombre = ((db.collection("usuarios").document(g.uid).get().to_dict()) or {}).get("nombre", "")
+        enviar_email_pregunta_reportada(email_usuario, pregunta_texto, motivo[:1000], nombre)
+    return jsonify(mensaje_ok), 201
 
 
 @bp.route("/generar-test-favoritas", methods=["POST"])

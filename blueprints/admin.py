@@ -36,6 +36,7 @@ from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_MET
 from utils import _desde_cache_o_calcular, _limpiar_cache_temario, invalidar_cache, ejecutar_en_transaccion
 from banco_preguntas_ia import coleccion_banco_preguntas
 from validacion_perfil import nombre_valido
+from email_utils import enviar_email_pregunta_corregida, enviar_email_pregunta_sin_cambios
 
 logger = logging.getLogger(__name__)
 bp = Blueprint("admin", __name__)
@@ -1227,6 +1228,76 @@ def preguntas_importar():
     return jsonify({"creadas": creadas, "errores": errores, "total": len(lista)})
 
 
+def _cambios_visibles(antes, despues):
+    """Diferencias entre dos versiones de una pregunta, solo en lo que ve un
+    usuario (enunciado, opciones, respuesta correcta, explicación) -- no
+    en tema/examen/numero, que no le dicen nada a quien reportó. Lista de
+    {campo, antes, despues}; campo es "enunciado", "opcion_A".."opcion_D",
+    "respuesta_correcta" o "explicacion" (ver email_utils._resumen_cambio)."""
+    cambios = []
+
+    def _norm(valor):
+        return (str(valor) if valor is not None else "").strip()
+
+    pares = [("enunciado", antes.get("pregunta"), despues.get("pregunta"))]
+    for letra in ("A", "B", "C", "D"):
+        pares.append((f"opcion_{letra}", (antes.get("opciones") or {}).get(letra), (despues.get("opciones") or {}).get(letra)))
+    pares.append(("respuesta_correcta", (antes.get("respuesta_correcta") or "").upper(), (despues.get("respuesta_correcta") or "").upper()))
+    pares.append(("explicacion", antes.get("explicacion"), despues.get("explicacion")))
+    for campo, valor_antes, valor_despues in pares:
+        if _norm(valor_antes) != _norm(valor_despues):
+            cambios.append({"campo": campo, "antes": _norm(valor_antes), "despues": _norm(valor_despues)})
+    return cambios
+
+
+def _fusionar_cambios(existentes, nuevos):
+    """Une los cambios de varias ediciones seguidas de la misma pregunta
+    sobre un mismo reporte: de cada campo se queda el valor de ANTES de la
+    primera edición y el de DESPUÉS de la última, y se descartan los que
+    acaban igual que empezaron (p. ej. se cambió y se volvió a dejar)."""
+    por_campo = {c["campo"]: dict(c) for c in existentes}
+    for c in nuevos:
+        if c["campo"] in por_campo:
+            por_campo[c["campo"]]["despues"] = c["despues"]
+        else:
+            por_campo[c["campo"]] = dict(c)
+    return [c for c in por_campo.values() if c["antes"] != c["despues"]]
+
+
+def _registrar_correccion_en_reportes(oposicion, pid, antes, despues, cambios):
+    """Anota la corrección en los reportes de usuario ABIERTOS de esta
+    pregunta, para que al marcarlos como revisados se sepa que hubo cambio
+    real (correo "corregida" con resumen en vez de "sin cambios"). Se busca
+    por oposición + texto del enunciado ANTERIOR (o por id, si ya se había
+    corregido antes), así funciona igual si se edita desde el botón del
+    reporte que desde Contenido."""
+    texto_antiguo = (antes.get("pregunta") or "").strip()
+    for doc in db.collection("errores_generacion").where("fuente", "==", "usuario_admin").stream():
+        d = doc.to_dict() or {}
+        if d.get("estado", "pendiente") != "pendiente" or d.get("oposicion") != oposicion:
+            continue
+        previa = d.get("correccion") or {}
+        misma_pregunta = (
+            (texto_antiguo and (d.get("pregunta_texto") or "").strip() == texto_antiguo)
+            or (previa.get("pregunta_id") == pid)
+        )
+        if not misma_pregunta:
+            continue
+        todos_los_cambios = _fusionar_cambios(previa.get("cambios") or [], cambios)
+        doc.reference.set({"correccion": {
+            "pregunta_id": pid,
+            "cambios": todos_los_cambios,
+            "despues": {
+                "pregunta": despues["pregunta"],
+                "opciones": despues["opciones"],
+                "respuesta_correcta": despues["respuesta_correcta"],
+                "explicacion": despues["explicacion"],
+            },
+            "fecha": datetime.utcnow().isoformat(),
+            "por": g.uid,
+        }}, merge=True)
+
+
 @bp.route("/admin/api/preguntas/<pid>", methods=["PUT"])
 @requiere_permiso("temario")
 def preguntas_editar(pid):
@@ -1239,18 +1310,30 @@ def preguntas_editar(pid):
         return jsonify({"error": error}), 400
     coleccion = coleccion_examenes_oficiales(oposicion)
     ref = db.collection(coleccion).document(pid)
-    if not ref.get().exists:
+    previo = ref.get()
+    if not previo.exists:
         return jsonify({"error": "Pregunta no encontrada"}), 404
-    ref.set({
+    antes = previo.to_dict() or {}
+    nuevo = {
         "pregunta": data["pregunta"].strip(),
         "opciones": {k: str(data["opciones"][k]).strip() for k in ("A", "B", "C", "D")},
         "respuesta_correcta": data["respuesta_correcta"].upper(),
         "explicacion": (data.get("explicacion") or "").strip(),
         "tema_id": (data.get("tema_id") or "").strip(),
         "examen": (data.get("examen") or "").strip(),
-        "numero": data.get("numero", 0),
-        "psicotecnico": bool(data.get("psicotecnico", False)),
-    }, merge=True)
+    }
+    # numero/psicotecnico solo si vienen en el payload: antes se escribían
+    # siempre con valor por defecto (0/False) y, como el formulario del admin
+    # no los enviaba, cada edición reseteaba el número de la pregunta y
+    # sacaba a las psicotécnicas de su filtro.
+    if "numero" in data:
+        nuevo["numero"] = data["numero"]
+    if "psicotecnico" in data:
+        nuevo["psicotecnico"] = bool(data["psicotecnico"])
+    ref.set(nuevo, merge=True)
+    cambios = _cambios_visibles(antes, nuevo)
+    if cambios:
+        _registrar_correccion_en_reportes(oposicion, pid, antes, nuevo, cambios)
     _limpiar_cache_temario()
     _registrar_auditoria("pregunta_editar", f"{oposicion}/{pid}", data["pregunta"][:80])
     return jsonify({"mensaje": "Pregunta actualizada"})
@@ -2383,6 +2466,24 @@ def usuarios_eliminar(uid):
 # ============================================================
 # Reportes de preguntas
 # ============================================================
+def _resumen_pregunta_oficial(doc_id, pd):
+    """Pregunta del banco oficial tal y como la necesita el panel para
+    juzgar un reporte Y para abrir el formulario de edición directamente
+    (con el id y los campos que el formulario reenvía al guardar)."""
+    return {
+        "id": doc_id,
+        "pregunta": pd.get("pregunta", ""),
+        "opciones": pd.get("opciones", {}),
+        "respuesta_correcta": (pd.get("respuesta_correcta") or "").upper(),
+        "explicacion": pd.get("explicacion", ""),
+        "tema_id": pd.get("tema_id", ""),
+        "examen": pd.get("examen", ""),
+        "numero": pd.get("numero", 0),
+        "psicotecnico": bool(pd.get("psicotecnico", False)),
+        "activa": pd.get("activa", True) is not False,
+    }
+
+
 @bp.route("/admin/api/reportes", methods=["GET"])
 @requiere_permiso("reportes")
 def reportes_listar():
@@ -2401,6 +2502,7 @@ def reportes_listar():
         d = doc.to_dict() or {}
         if estado and estado != "todos" and d.get("estado", "pendiente") != estado:
             continue
+        correccion = d.get("correccion") or {}
         reportes.append({
             "id": doc.id,
             "pregunta_id": d.get("pregunta_id", ""),
@@ -2410,6 +2512,10 @@ def reportes_listar():
             "estado": d.get("estado", "pendiente"),
             "fecha": d.get("fecha", ""),
             "uid": d.get("uid", ""),
+            "tiene_correccion": bool(correccion),
+            "resultado": d.get("resultado", ""),
+            "email_resolucion_enviado": bool(d.get("email_resolucion_enviado")),
+            "_pid_corregida": correccion.get("pregunta_id", ""),
         })
     reportes.sort(key=lambda r: r.get("fecha", ""), reverse=True)
     total = len(reportes)
@@ -2431,18 +2537,60 @@ def reportes_listar():
             pd = pdoc.to_dict() or {}
             if pd.get("tipo") != "pregunta":
                 continue
-            indice[(pd.get("pregunta") or "").strip()] = {
-                "opciones": pd.get("opciones", {}),
-                "respuesta_correcta": (pd.get("respuesta_correcta") or "").upper(),
-                "explicacion": pd.get("explicacion", ""),
-                "activa": pd.get("activa", True) is not False,
-            }
+            indice[(pd.get("pregunta") or "").strip()] = _resumen_pregunta_oficial(pdoc.id, pd)
         bancos[op] = indice
     for r in reportes:
+        pid_corregida = r.pop("_pid_corregida")
         encontrada = bancos.get(r.get("oposicion"), {}).get((r.get("pregunta_texto") or "").strip())
+        if encontrada is None and pid_corregida and oposicion_valida(r.get("oposicion")):
+            # Si se corrigió el enunciado, el texto del reporte ya no
+            # coincide con el banco: se recupera la pregunta por su id.
+            actual = db.collection(coleccion_examenes_oficiales(r["oposicion"])).document(pid_corregida).get()
+            if actual.exists:
+                encontrada = _resumen_pregunta_oficial(actual.id, actual.to_dict() or {})
         r["pregunta_oficial"] = encontrada  # None si no está en el banco
 
     return jsonify({"reportes": reportes, "total": total, "pagina": pagina, "por_pagina": por_pagina})
+
+
+def _avisar_resultado_reporte(reporte, nota):
+    """Manda al usuario que reportó la pregunta el correo con el resultado
+    de la revisión -- "corregida" (con resumen de cambios y la pregunta
+    completa) si preguntas_editar anotó una `correccion` en el reporte, y
+    "sin_cambios" si no. Devuelve (resultado, enviado). Sin email conocido
+    (reportes anteriores a que se guardara, y usuario sin email en
+    usuarios/{uid}) no se envía nada, sin error."""
+    uid = reporte.get("uid", "")
+    usuario = (db.collection("usuarios").document(uid).get().to_dict() or {}) if uid else {}
+    destinatario = reporte.get("email") or usuario.get("email")
+    nombre = usuario.get("nombre", "")
+    oposicion = reporte.get("oposicion", "")
+    correccion = reporte.get("correccion")
+    pregunta = {"pregunta": reporte.get("pregunta_texto", "")}
+
+    if correccion:
+        resultado = "corregida"
+        pregunta = dict(correccion.get("despues") or pregunta)
+        if oposicion_valida(oposicion) and correccion.get("pregunta_id"):
+            actual = db.collection(coleccion_examenes_oficiales(oposicion)).document(correccion["pregunta_id"]).get()
+            if actual.exists:
+                pregunta = _resumen_pregunta_oficial(actual.id, actual.to_dict() or {})
+    else:
+        resultado = "sin_cambios"
+        if oposicion_valida(oposicion) and pregunta["pregunta"]:
+            for pdoc in db.collection(coleccion_examenes_oficiales(oposicion)).where("pregunta", "==", pregunta["pregunta"]).stream():
+                pd = pdoc.to_dict() or {}
+                if pd.get("tipo") == "pregunta":
+                    pregunta = _resumen_pregunta_oficial(pdoc.id, pd)
+                    break
+
+    if not destinatario:
+        return resultado, False
+    if resultado == "corregida":
+        enviar_email_pregunta_corregida(destinatario, pregunta, correccion.get("cambios") or [], nombre, nota)
+    else:
+        enviar_email_pregunta_sin_cambios(destinatario, pregunta, nombre, nota)
+    return resultado, True
 
 
 @bp.route("/admin/api/reportes/<rid>", methods=["PATCH"])
@@ -2452,17 +2600,33 @@ def reportes_actualizar(rid):
     estado = data.get("estado")
     if estado not in ("pendiente", "revisado", "descartado"):
         return jsonify({"error": "Estado no válido"}), 400
+    nota = (data.get("nota") or "").strip()[:500]
     ref = db.collection("errores_generacion").document(rid)
-    if not ref.get().exists:
+    snap = ref.get()
+    if not snap.exists:
         return jsonify({"error": "Reporte no encontrado"}), 404
-    ref.set({
+    actual = snap.to_dict() or {}
+    campos = {
         "estado": estado,
         "resuelto": estado != "pendiente",
         "revisado_por": g.uid,
         "fecha_revision": datetime.utcnow().isoformat(),
-    }, merge=True)
+    }
+    # Solo "revisado" avisa al usuario ("descartado" es para spam/duplicados,
+    # y no se le dice nada), y solo la primera vez: reabrir y volver a
+    # revisar, o un reporte ya revisado antes de que existiera este correo,
+    # nunca reenvía.
+    email_enviado = False
+    if estado == "revisado" and actual.get("estado") != "revisado" and not actual.get("email_resolucion_enviado"):
+        resultado, email_enviado = _avisar_resultado_reporte(actual, nota)
+        campos["resultado"] = resultado
+        if nota:
+            campos["nota"] = nota
+        if email_enviado:
+            campos["email_resolucion_enviado"] = True
+    ref.set(campos, merge=True)
     _registrar_auditoria("reporte_" + estado, rid)
-    return jsonify({"mensaje": "Reporte actualizado"})
+    return jsonify({"mensaje": "Reporte actualizado", "email_enviado": email_enviado})
 
 
 # ============================================================

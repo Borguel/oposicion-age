@@ -972,7 +972,11 @@ function modalPregunta(p) {
       if (!elOpcion.value.trim()) { toast(`Falta el texto de la opción ${k}.`, "error"); elOpcion.focus(); return; }
     }
     const cuerpo = {
-      oposicion: oposicionActual(),
+      // La oposición de la propia pregunta (al abrirla desde un reporte
+      // puede no ser la del desplegable "Gestionando"); numero/psicotecnico
+      // se reenvían para que editar no los resetee en el servidor.
+      oposicion: p?.oposicion || oposicionActual(),
+      ...(p ? { numero: p.numero, psicotecnico: p.psicotecnico } : {}),
       pregunta: document.getElementById("q-enunciado").value,
       opciones: { A: document.getElementById("op-A").value, B: document.getElementById("op-B").value, C: document.getElementById("op-C").value, D: document.getElementById("op-D").value },
       respuesta_correcta: document.querySelector('input[name="correcta"]:checked')?.value || "A",
@@ -989,7 +993,12 @@ function modalPregunta(p) {
       const r = p
         ? await api("PUT", `/admin/api/preguntas/${p.id}`, cuerpo)
         : await api("POST", "/admin/api/preguntas", cuerpo);
-      if (r) { toast(p ? "Pregunta actualizada." : "Pregunta creada."); cerrarModal(); if (pestanaActual === "preguntas") cargarPreguntas(); }
+      if (r) {
+        toast(p ? "Pregunta actualizada." : "Pregunta creada.");
+        cerrarModal();
+        if (pestanaActual === "preguntas") cargarPreguntas();
+        else if (pestanaActual === "reportes" && vistaReportes === "preguntas") cargarReportes();
+      }
     } finally {
       boton.disabled = false;
     }
@@ -2164,7 +2173,7 @@ async function cargarReportes() {
     return;
   }
   const clase = (e) => e === "revisado" ? "admin-estado-revisado" : e === "descartado" ? "admin-estado-descartado" : "admin-estado-pendiente";
-  cont.innerHTML = d.reportes.map((r) => {
+  cont.innerHTML = d.reportes.map((r, i) => {
     const po = r.pregunta_oficial;
     const detalle = po
       ? `<div class="admin-reporte-oficial">
@@ -2182,24 +2191,69 @@ async function cargarReportes() {
       <p class="admin-reporte-preg">${escapeHtml(r.pregunta_texto)}</p>
       ${detalle}
       <p class="admin-reporte-motivo"><strong>Motivo del usuario:</strong> ${escapeHtml(r.motivo)}</p>
+      ${r.tiene_correccion && r.estado === "pendiente" ? '<p class="admin-reporte-meta admin-reporte-corregida">✔ Pregunta ya corregida: al marcar revisado se avisará al usuario con el resumen de cambios.</p>' : ""}
+      ${r.email_resolucion_enviado ? `<p class="admin-reporte-meta">Usuario avisado por email (${r.resultado === "corregida" ? "pregunta corregida" : "sin cambios"}).</p>` : ""}
       <div class="admin-reporte-acciones">
-        <button class="age-btn age-btn-primary admin-mini" data-editar-preg="${escapeHtml(r.pregunta_texto)}">Editar pregunta</button>
-        ${r.estado !== "revisado" ? `<button class="age-btn age-btn-outline admin-mini" data-revisado="${escapeHtml(r.id)}">Marcar revisado</button>` : ""}
-        ${r.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar="${escapeHtml(r.id)}">Descartar</button>` : ""}
+        ${po
+          ? `<button class="age-btn age-btn-primary admin-mini" data-editar-reporte="${i}">Editar pregunta</button>`
+          : `<button class="age-btn age-btn-outline admin-mini" disabled title="No está en el banco oficial: no se puede editar desde aquí">Editar pregunta</button>`}
+        ${r.estado !== "revisado" ? `<button class="age-btn age-btn-outline admin-mini" data-revisado="${i}">Marcar revisado</button>` : ""}
+        ${r.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar="${escapeHtml(r.id)}" title="No avisa al usuario">Descartar</button>` : ""}
         ${r.uid && puedeVer("usuarios") ? `<button class="age-btn age-btn-outline admin-mini" data-ver-perfil="${escapeHtml(r.uid)}">${icono("usuario", 13)} Ver perfil</button>` : ""}
       </div>
     </div>`;
   }).join("") + paginacionHtml(d, "reportes", "rep-pag");
-  cont.querySelectorAll("[data-revisado]").forEach((b) => b.addEventListener("click", () => cambiarEstadoReporte(b.dataset.revisado, "revisado")));
+  cont.querySelectorAll("[data-revisado]").forEach((b) => b.addEventListener("click", () => modalMarcarRevisado(d.reportes[Number(b.dataset.revisado)])));
   cont.querySelectorAll("[data-descartar]").forEach((b) => b.addEventListener("click", () => cambiarEstadoReporte(b.dataset.descartar, "descartado")));
-  cont.querySelectorAll("[data-editar-preg]").forEach((b) => b.addEventListener("click", () => buscarYEditarPregunta(b.dataset.editarPreg)));
+  cont.querySelectorAll("[data-editar-reporte]").forEach((b) => b.addEventListener("click", () => {
+    const r = d.reportes[Number(b.dataset.editarReporte)];
+    // La pregunta viene ya localizada por el servidor (con su id y su
+    // propia oposicion): antes se buscaba por texto en la oposicion del
+    // desplegable "Gestionando", que casi nunca era la del reporte.
+    modalPregunta({ ...r.pregunta_oficial, oposicion: r.oposicion });
+  }));
   cont.querySelectorAll("[data-ver-perfil]").forEach((b) => b.addEventListener("click", () => abrirUsuario(b.dataset.verPerfil)));
   wirePaginacion(cont, "rep-pag", (delta) => { paginaReportes += delta; cargarReportes(); });
 }
 
-async function cambiarEstadoReporte(id, estado) {
-  const r = await api("PATCH", `/admin/api/reportes/${id}`, { estado });
-  if (r) { toast(estado === "revisado" ? "Reporte marcado como revisado." : "Reporte descartado."); cargarReportes(); }
+async function cambiarEstadoReporte(id, estado, nota = "") {
+  const r = await api("PATCH", `/admin/api/reportes/${id}`, nota ? { estado, nota } : { estado });
+  if (r) {
+    toast(estado === "revisado"
+      ? (r.email_enviado ? "Reporte revisado y usuario avisado por email." : "Reporte marcado como revisado.")
+      : "Reporte descartado.");
+    cargarReportes();
+  }
+}
+
+// "Marcar revisado" avisa por email a quien reportó (ver
+// reportes_actualizar en blueprints/admin.py): corrección con resumen si la
+// pregunta se editó, o "tras la revisión está bien formulada" si no. El
+// modal dice cuál saldrá y deja añadir una nota personal opcional.
+function modalMarcarRevisado(r) {
+  const corregida = !!r.tiene_correccion;
+  abrirModal(`
+    <h2>Marcar reporte como revisado</h2>
+    <p class="admin-reporte-meta" style="font-size:13.5px;margin-bottom:12px;">
+      ${corregida
+        ? "La pregunta se ha corregido: se enviará al usuario un correo con el <strong>resumen de cambios</strong> y la pregunta completa ya corregida."
+        : "No has modificado la pregunta: se enviará al usuario un correo indicando que <strong>tras la revisión está bien formulada</strong>."}
+      Si solo quieres cerrar el reporte sin avisar, usa «Descartar».
+    </p>
+    <label for="rv-nota">Nota para el usuario (opcional)</label>
+    <textarea class="age-input" id="rv-nota" rows="3" maxlength="500" placeholder="Aparecerá en el correo como un mensaje del equipo."></textarea>
+    <button class="age-btn age-btn-primary" id="rv-confirmar" style="margin-top:14px;">Marcar revisado y avisar</button>`);
+  document.getElementById("rv-confirmar").addEventListener("click", async (evento) => {
+    const boton = evento.currentTarget;
+    boton.disabled = true;
+    const nota = document.getElementById("rv-nota").value.trim();
+    try {
+      await cambiarEstadoReporte(r.id, "revisado", nota);
+      cerrarModal();
+    } finally {
+      boton.disabled = false;
+    }
+  });
 }
 
 // ===== Calidad IA: auto-rechazos de la verificación automática (ver
@@ -2737,17 +2791,6 @@ async function cambiarEstadoSoporte(id, estado) {
 // Desde un reporte, localiza la pregunta oficial por su texto y abre el modal
 // de edición ya cargada (si es una pregunta generada por IA que no está en la
 // colección oficial, avisa de que no se puede editar centralmente).
-async function buscarYEditarPregunta(textoPregunta) {
-  const d = await apiGet(`/admin/api/preguntas?oposicion=${oposicionActual()}`);
-  if (!d) return;
-  const encontrada = (d.preguntas || []).find((p) => p.pregunta.trim() === textoPregunta.trim());
-  if (!encontrada) {
-    toast("Esa pregunta no está en el banco oficial de esta oposición (puede ser generada por IA). Cambia de oposición si procede.", "error");
-    return;
-  }
-  modalPregunta(encontrada);
-}
-
 // ===== Auditoría =====
 function _etiquetaAccionMapa() {
   const i14 = (n) => icono(n, 14);

@@ -313,3 +313,146 @@ def test_excepcion_de_red_no_se_propaga(monkeypatch):
     monkeypatch.setenv("BREVO_API_KEY", "clave")
     with patch("email_utils.requests.post", side_effect=ConnectionError("caído")):
         email_utils.enviar_email_bienvenida("u@example.com")  # no debe lanzar
+
+
+# --- Reportes de preguntas: recibido / corregida / sin cambios ---
+
+_PREGUNTA_COMPLETA = {
+    "pregunta": "Señale cómo se retribuye la peligrosidad o penosidad de un puesto de trabajo:",
+    "opciones": {
+        "A": "Complemento de productividad.",
+        "B": "Complemento específico.",
+        "C": "Complemento de destino.",
+        "D": "Gratificación por servicios extraordinarios.",
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "El art. 23.3.b) de la Ley 30/1984 lo atribuye al complemento específico.",
+}
+
+
+def test_pregunta_reportada_manda_html_con_la_pregunta_y_el_motivo(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_PREGUNTA_REPORTADA", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pregunta_reportada("u@example.com", "¿Pregunta?", "La C también vale", nombre="Ana")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["to"] == [{"email": "u@example.com"}]
+    assert "templateId" not in payload
+    assert "¿Pregunta?" in payload["htmlContent"]
+    assert "La C también vale" in payload["htmlContent"]
+    assert "Hola Ana" in payload["htmlContent"]
+    assert payload["subject"]
+
+
+def test_pregunta_reportada_escapa_el_texto_del_usuario(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_PREGUNTA_REPORTADA", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pregunta_reportada(
+            "u@example.com", "<b>pregunta</b>", "<script>alert(1)</script>", nombre="<i>Ana</i>",
+        )
+
+    html = mock_post.call_args.kwargs["json"]["htmlContent"]
+    assert "<script>" not in html
+    assert "<b>pregunta</b>" not in html
+    assert "<i>Ana</i>" not in html
+    assert "&lt;script&gt;" in html
+
+
+def test_pregunta_reportada_usa_plantilla_de_brevo_si_esta_configurada(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("BREVO_TEMPLATE_PREGUNTA_REPORTADA", "31")
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pregunta_reportada("u@example.com", "¿Pregunta?", "motivo")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["templateId"] == 31
+    assert payload["params"]["pregunta_texto"] == "¿Pregunta?"
+    assert "subject" not in payload
+
+
+def test_pregunta_corregida_resume_los_cambios_e_incluye_la_pregunta_completa(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_PREGUNTA_CORREGIDA", raising=False)
+    cambios = [
+        {"campo": "respuesta_correcta", "antes": "C", "despues": "B"},
+        {"campo": "explicacion", "antes": "vieja", "despues": "nueva"},
+    ]
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pregunta_corregida(
+            "u@example.com", _PREGUNTA_COMPLETA, cambios, nombre="Ana", nota="Gracias por la precisión",
+        )
+
+    html = mock_post.call_args.kwargs["json"]["htmlContent"]
+    assert "Respuesta correcta: de C a B." in html
+    assert "Explicación actualizada." in html
+    assert "Complemento específico. ✓" in html  # la correcta, resaltada
+    assert "Complemento de destino." in html  # las otras opciones también salen
+    assert "Ley 30/1984" in html  # explicación
+    assert "Gracias por la precisión" in html  # nota del administrador
+    assert "Mensaje del equipo" in html
+
+
+def test_pregunta_corregida_sin_nota_no_incluye_el_bloque_de_mensaje(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_PREGUNTA_CORREGIDA", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pregunta_corregida(
+            "u@example.com", _PREGUNTA_COMPLETA, [{"campo": "enunciado", "antes": "a", "despues": "b"}],
+        )
+
+    html = mock_post.call_args.kwargs["json"]["htmlContent"]
+    assert "Mensaje del equipo" not in html
+    assert "Enunciado reformulado." in html
+
+
+def test_pregunta_corregida_usa_plantilla_de_brevo_si_esta_configurada(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("BREVO_TEMPLATE_PREGUNTA_CORREGIDA", "32")
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pregunta_corregida(
+            "u@example.com", _PREGUNTA_COMPLETA, [{"campo": "respuesta_correcta", "antes": "C", "despues": "B"}],
+        )
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["templateId"] == 32
+    assert payload["params"]["respuesta_correcta"] == "B"
+    assert payload["params"]["opcion_b"] == "Complemento específico."
+    assert payload["params"]["resumen_cambios"] == "Respuesta correcta: de C a B."
+
+
+def test_pregunta_sin_cambios_dice_que_esta_bien_formulada_e_incluye_la_pregunta(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_PREGUNTA_SIN_CAMBIOS", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pregunta_sin_cambios("u@example.com", _PREGUNTA_COMPLETA, nombre="Ana", nota="Un saludo")
+
+    html = mock_post.call_args.kwargs["json"]["htmlContent"]
+    assert "correctamente formulada" in html
+    assert "Complemento específico. ✓" in html
+    assert "Un saludo" in html
+
+
+def test_pregunta_sin_cambios_tolera_una_pregunta_minima_sin_banco(monkeypatch):
+    # Pregunta generada por IA: no está en el banco oficial, solo se cita el enunciado.
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_PREGUNTA_SIN_CAMBIOS", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pregunta_sin_cambios("u@example.com", {"pregunta": "¿Pregunta de IA?"})
+
+    html = mock_post.call_args.kwargs["json"]["htmlContent"]
+    assert "¿Pregunta de IA?" in html
+    assert "✓" not in html
+    assert "Explicación:" not in html
+
+
+def test_pregunta_sin_cambios_usa_plantilla_de_brevo_si_esta_configurada(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("BREVO_TEMPLATE_PREGUNTA_SIN_CAMBIOS", "33")
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pregunta_sin_cambios("u@example.com", _PREGUNTA_COMPLETA)
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["templateId"] == 33
+    assert "subject" not in payload
